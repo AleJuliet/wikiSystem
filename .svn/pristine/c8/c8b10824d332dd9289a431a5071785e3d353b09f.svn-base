@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Wiki</title>
+
+    <!-- Bootstrap Core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <style type="text/css">
+    body {
+      padding-top: 70px; /* Required padding for .navbar-fixed-top. Remove if using .navbar-static-top. Change if height of navigation changes. */
+    }
+    .nav-tabs>li.active>a, .nav-tabs>li.active>a:focus, .nav-tabs>li.active>a:hover
+    {
+      border: 0 solid #ddd;
+    }
+    .nav-tabs>.active>a
+    {
+      border: 0 solid #ddd;
+    }
+    .nav-tabs>li.active>a, .nav-tabs>li.active>a:focus, .nav-tabs>li.active>a:hover {
+      border-bottom-color: #c22d1a;
+      border-bottom-width:1px;
+      color:black;
+    }
+    .nav-tabs>li>a {
+      border-bottom: 0 solid #ddd; 
+      color:#c22d1a;
+    }
+    .nav-tabs
+    {
+     border-bottom-width:0px; 
+/*     border-bottom-color:#fcdad5; */
+    }
+    .table>tbody>tr>td
+    {
+     border-top-width: 0;
+    }
+    .table>tbody>tr>td {
+     padding: 0px 5px 3px 10px;
+    }
+    .processname:hover 
+    {
+     text-decoration: underline;
+     cursor: pointer;
+    }
+    .panelss .listcat .panel-heading {
+      background-color: transparent;
+      padding: 3px 2px 8px;
+      border-bottom: 1px solid #bababa;
+    }
+    .panelss .listcat .panel-default {
+      border-color: transparent;
+    }
+    .panelss .listcat .panel-body {
+      padding: 0; 
+    }
+    .hoverrow:focus, .hoverrow:hover {
+      background-color: #d9edf7 !important;
+      cursor: pointer;
+    }
+    .selectform
+    {
+    border-radius: 5px;
+    padding: 2px;
+    }
+    .pointer 
+    {
+    cursor: pointer;
+    }
+    .left {    
+    position: absolute;
+    left: 0;
+    }
+    .right {    
+    position: absolute;
+    right: 0;
+    }
+    </style>
+
+</head>
+
+<body>
+
+    <?php 
+    // include("include/tables.php");
+    // createtables();
+    $page = "serv";
+    include('header.php');
+    
+    //Pools 
+    $db = opendb();   
+    $ret = $db->query('SELECT * FROM POOL');
+    
+    $pool = array();
+    while ($res = $ret->fetchArray(SQLITE3_ASSOC)) {
+      $pool[$res["poolid"]] = $res["poolname"];
+    }
+    
+    $ret = $db->query('SELECT * FROM TYPE');
+    
+    $type = array();
+    while ($res = $ret->fetchArray(SQLITE3_ASSOC)) {
+      $type[$res["typeid"]] = $res["typename"];
+    }
+    
+    $ret = $db->query('SELECT * FROM LOCATION');
+    
+    $location = array();
+    while ($res = $ret->fetchArray(SQLITE3_ASSOC)) {
+      $location[$res["locid"]] = $res["location"];
+    }
+
+//     include("include/tables.php");
+//     createtables2();
+    $section = "";
+    if(isset($_GET["s"]))
+      $section = $_GET["s"];
+    
+//     deletetable();
+
+    $samenw = array();
+    $db = opendb();
+    $sid = "";
+    if(isset($_GET["si"]))
+      $sid = $_GET["si"];
+      
+    $query = $db->prepare('SELECT * FROM SERVERS as s where s.serverid=:id');
+    $query->bindValue(':id', $sid, SQLITE3_TEXT);
+    
+    $resultx = $query->execute();
+    ?>
+    
+    <script type="text/javascript">
+      var hash = window.location.hash;
+    </script>
+    
+    <!-- Page Content -->
+    <div class="container">
+        <!-- Search Content -->
+	<div style="float: right;width:300px">
+	  <div class="input-group">
+	    <input type="text" class="form-control" placeholder="Search for...">
+	    <span class="input-group-btn">
+	      <button class="btn btn-default" type="button">Go!</button>
+	    </span>
+	  </div><!-- /input-group -->
+	</div><!-- /.row -->
+	
+	
+	<div style="margin-top:50px"></div>
+	
+	<div id="bodyelements" style="">
+	  <ul class="nav nav-tabs ">
+	      <li role="presentation"><a class="pointer"  style="font-size:12px;padding: 5px 8px;">All Servers</a></li>
+	      <li role="presentation"><a class="pointer" style="font-size:12px;padding: 5px 8px;">Pool</a></li>
+	      <li role="presentation"><a class="pointer" style="font-size:12px;padding: 5px 8px;">Location</a></li>
+	      <li role="presentation"><a class="pointer"  style="font-size:12px;padding: 5px 8px;">Type</a></li>
+	      <li role="presentation"><a class="pointer"  style="font-size:12px;padding: 5px 8px;">Networks</a></li>
+	  </ul>
+	  
+	  <div id="procedurepanel" style="vertical-align: top;margin-top:25px;margin-left:5px">
+	      <div class="panel panel-default" style="min-height:600px;">
+		  <div class="panel-heading" style="padding: 0px 5px;text-align:right">
+		    <button type="button" onclick="addserverf()" id="newserb" style="    visibility: hidden;" class="btn btn-default navbar-btn"><img src="img/add.png" width="15px" 
+		    style="margin-bottom:2px">
+			<label style="font-weight:400;margin-bottom: 1px;cursor:pointer " class="newproc">Edit Server</label></button>
+<!--		    <div class="btn-group">
+		      <button type="button" class="btn btn-danger">Order by</button>
+		      <button type="button" class="btn btn-danger dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+			<span class="caret"></span>
+			<span class="sr-only">Toggle Dropdown</span>
+		      </button>
+		      <ul class="dropdown-menu">
+			<li><a href="#">Name</a></li>
+			<li><a href="#">Date</a></li>
+			<li><a href="#">Pool</a></li>
+			<li><a href="#">Type</a></li>
+			<li><a href="#">Location</a></li>
+		      </ul>
+		    </div>-->
+		  </div>
+		  		  
+		  <div id="newserver" style="display:block;margin: 30px;">
+		    <form role="form" method="post" name="newserver" id="newserver">
+		    <?php 
+		    while ($resx = $resultx->fetchArray(SQLITE3_ASSOC)) {
+		    ?>
+		      <div class="form-group" >		  
+			  <label>Name</label>
+			  <input class="form-control" name="name" id="nameinput" style="width:40%" value="<?php echo $resx["servername"]?>">
+			  <p class="help-block"></p>
+		      </div>    
+		      <div class="form-group" style="margin-top:20px;margin-bottom:20px" >	
+			  <?php 
+			  $new = $db->prepare('SELECT * FROM IPSERVER WHERE serverid=:id');
+			  $new->bindValue(':id', $sid, SQLITE3_TEXT);
+			  if (!($resultx2 = $new->execute())) {
+			      continue;
+			  } 
+			  $h = 0;
+			  while ($resx2 = $resultx2->fetchArray(SQLITE3_ASSOC)) {
+			  ?>
+			   <?php 
+			   if ($h==0)
+			   {
+			   ?>
+			    <label style="margin-right:5px">Ip</label>
+			    <input class="form-control" name="ip" id="ipinput" style="width:30%;display:inline;margin-right:15px" value="<?php echo $resx2["ipserver"]?>">
+			    <label style="margin-right:5px">Mascara</label>
+			    <input class="form-control" name="mascara" id="mascarainput" style="width:30%;display:inline" value="<?php echo $resx2["mascara"]?>">
+			    <img style='cursor:pointer;margin-left:10px;margin-bottom:5px'
+			      onclick='addnewip()' width="25px" id='newipadd' src='img/add.png'>
+			    <p class="help-block"></p>
+			    <div id="othersip">
+			   <?php 
+			   }
+			   else 
+			   {
+			   ?>
+			    <div style="margin-top:5px"><label style="margin-right:5px">Ip</label>
+			    <input class="form-control" name="ip" id="ipinput" style="width:30%;display:inline;margin-right:15px" value="<?php echo $resx2["ipserver"]?>">
+			    <label style="margin-right:5px">Mascara</label>
+			    <input class="form-control" name="mascara" id="mascarainput" style="width:30%;display:inline" value="<?php echo $resx2["mascara"]?>"></div>
+			  <?php
+			   }
+			   $h++;
+			  }
+			  if ($h>0)
+			    echo "</div>";
+			  ?>
+			  
+		      </div>
+		      <div class="form-group">
+			  <label>Description</label>
+			  <textarea class="form-control" rows="8" name="description" id="description"><?php echo $resx["serverdes"]?></textarea>
+		      </div>		      
+		      <div class="form-group" >		  
+			  <label>Role</label>
+			  <input class="form-control" name="role" id="roleinput" style="width:40%" value="<?php echo $resx["role"]?>">
+			  <p class="help-block"></p>
+		      </div>      
+		      <div class="form-group" >		  
+			  <label>Pool:</label>
+			  <select class="selectform" id="poolName" name="poolName">
+			  <?php		
+			  $db = opendb();   
+			  $ret = $db->query('SELECT * FROM POOL');
+			  
+			  $i = 0;
+			  while ($cat = $ret->fetchArray(SQLITE3_ASSOC)) {
+			  ?>
+			    <option value="<?php echo $cat["poolid"]?>"><?php echo $cat["poolname"]?></option>
+			  <?php
+			  }
+			  ?>
+			</select>
+		      </div>  
+		      <div class="form-group" >		  
+			  <label>Type:</label>
+			  <select class="selectform" id="typeName" name="typeName">
+			  <?php		    
+			  $ret = $db->query('SELECT * FROM TYPE');
+			  
+			  $i = 0;
+			  while ($cat = $ret->fetchArray(SQLITE3_ASSOC)) {
+			  ?>
+			    <option value="<?php echo $cat["typeid"]?>"><?php echo $cat["typename"]?></option>
+			  <?php
+			  }
+			  ?>
+			  </select>
+		      </div>  
+		      <div class="form-group" >		  
+			  <label>Location:</label>
+			  <select class="selectform" id="locName" name="locName">
+			  <?php		    
+			  $ret = $db->query('SELECT * FROM LOCATION');
+			  
+			  $i = 0;
+			  while ($cat = $ret->fetchArray(SQLITE3_ASSOC)) {
+			  ?>
+			    <option value="<?php echo $cat["locid"]?>"><?php echo $cat["location"]?></option>
+			  <?php
+			  }
+			  ?>
+			  </select>
+		      </div>  
+		      <div class="form-group" >		  
+			  <label>Users:</label></p>
+			  <span id="userslist">
+			  <?php		    
+			  $ret = $db->prepare('SELECT * FROM USERSERVER where serverid=:id');
+			  $ret->bindValue(':id', $sid, SQLITE3_TEXT);
+			  if (!($results = $ret->execute())) {
+			      continue;
+			  } 
+			  $i = 0;
+			  while ($cat = $results->fetchArray(SQLITE3_ASSOC)) {
+			  ?>			  
+			  <span id='sp<?php echo $cat["serveruser"]?>'><?php echo $cat["serveruser"]?><img style='cursor:pointer;'
+			    onclick='removeuser("<?php echo $cat["serveruser"]?>",<?php echo $cat["serverid"]?>)' id='usrdel<?php echo $cat["serveruser"]?>' src='img/closeimg.png'><br></span>
+			  <?php
+			  }
+			  ?>
+			  </span>
+			  <select class="selectform" id="usersname" name="usersname">
+			  <option value="d"></option>
+			    <?php		    
+			    $ret = $db->query('SELECT * FROM USERS');
+			    
+			    $i = 0;
+			    while ($cat = $ret->fetchArray(SQLITE3_ASSOC)) {
+			    ?>
+			      <option value="<?php echo $cat["username"]?>"><?php echo $cat["username"]?></option>
+			    <?php
+			    }
+			    ?>
+			  </select>
+			  <label>or</label>
+			  <input class="form-control" name="usernameinput" id="usernameinput" style="width:20%;display: inline;">
+			  <button type="reset" id="cancelbutton" class="btn btn-default" onclick="adduser()">Add</button>
+			  <p class="help-block"></p>			  
+		      </div>  
+		      
+		      <div class="form-group" >		  
+			  <label>Procedures:</label></p>
+			  <span id="proclist2">
+			  <?php		    
+			  $ret = $db->prepare('SELECT * FROM PROCSERVER as prs,PROCEDURES pr where serverid=:id and pr.procid=prs.procid');
+			  $ret->bindValue(':id', $sid, SQLITE3_TEXT);
+			  if (!($results = $ret->execute())) {
+			      continue;
+			  } 
+			  $i = 0;
+			  while ($cat = $results->fetchArray(SQLITE3_ASSOC)) {
+			  ?>
+			    <div id='spp<?php echo $cat["procid"]?>'><span class='proclistswe' data-value='<?php echo $cat["procid"]?>'>
+			    <?php echo $cat["procname"]?></span>
+			    <img style='cursor:pointer;' 
+			    onclick='removeproc(<?php echo $cat["procid"]?>)' id='cprocdel<?php echo $cat["procid"]?>' src='img/closeimg.png'><br>
+			    </div>
+			  <?php
+			  }
+			  ?>
+			  </span>
+			  <select class="selectform" id="procnames" name="procnames">
+			  <option value="d"></option>
+			    <?php		    
+			    $ret = $db->query('SELECT * FROM PROCEDURES order by procname');
+			    
+			    $i = 0;
+			    while ($cat = $ret->fetchArray(SQLITE3_ASSOC)) {
+			    ?>
+			      <option value="<?php echo $cat["procid"]?>"><?php echo $cat["procname"]?></option>
+			    <?php
+			    }
+			    ?>
+			  </select>
+			  <p class="help-block"></p>
+		      </div> 
+		      
+
+		      <img class="loadingicon4" src="img/loading.gif" style="visibility: hidden;    margin: 10px;" width="20">
+		    </form>
+		    <?php } ?>
+		    <button type="button " id="addbutton" class="btn btn-success" onclick="editserver()">Edit Server</button>
+                    <button type="reset" id="cancelbutton" class="btn btn-default" onclick="cancelserver()">Cancel</button>
+		  </div>
+		  
+	      </div>
+	  </div>
+	  
+        </div><!-- body elements -->
+    
+    </div>
+      
+    <!-- jQuery -->
+    <script src="js/jquery.js"></script>
+    <!-- Bootstrap Core JavaScript -->
+    <script src="js/bootstrap.min.js"></script>
+    
+    <script type="text/javascript">
+    $( document ).ready(function() {
+      $('.nav-tabs > li > a').click(function(event){
+	if($(this).text()=="All Servers")
+	{
+	  var urlf = "server.php";
+	  setTimeout(function(){document.location.href=urlf},100); 
+	}
+	else if ($(this).text()=="Pool")
+	{
+	  var urlf = "server.php#p";
+	  setTimeout(function(){document.location.href=urlf},100);
+	}
+	else if ($(this).text()=="Location")
+	{
+	  var urlf = "server.php#l";
+	  setTimeout(function(){document.location.href=urlf},100);
+	}
+	else if ($(this).text()=="Type")
+	{
+	  var urlf = "server.php#t";
+	  setTimeout(function(){document.location.href=urlf},100);
+	}
+	else 
+	{
+	  var urlf = "server.php#v";
+	  setTimeout(function(){document.location.href=urlf},100);
+	}
+      });
+      $("#usersname").on("change", function()
+      {
+	if ($('#usersname option:first-child').val()=="d")
+	  $("#usersname option:first-child").remove();	
+	var usr = this.value;
+	var text = $("#userslist").html();
+	if($("#sp" + usr).length == 0) {
+	  $("#userslist").html(text+"<span id='sp"+usr+"'>"+ usr+"<img style='cursor:pointer;'"
+		    +"onclick='removeuser(\""+usr+"\")' id='usrdel"+usr+"' src='img/closeimg.png'><br></span>");
+	}
+      });
+      $("#procnames").on("change", function()
+      {
+	if ($('#procnames option:first-child').val()=="d")
+	  $("#procnames option:first-child").remove();	
+	var proc = this.value;
+	var proc2 = $("#procnames option:selected").html();
+	var text = $("#proclist2").html();
+	if($("#spp" + proc).length == 0) {
+	  $("#proclist2").html(text+"<div data-value='"+proc+"' id='spp"+proc+"'><span class='proclistswe' data-value='"+proc+"'>"+ proc2+"</span><img style='cursor:pointer;'"
+		    +"onclick='removeproc(\""+proc+"\")' id='cprocdel"+proc+"' src='img/closeimg.png'><br></div>");
+	}
+      });
+    });
+    function editserver()
+    {
+      var name = document.forms["newserver"]["name"];
+      var ip = document.forms["newserver"]["ip"];
+      var masc = document.forms["newserver"]["mascara"];
+      var des = document.forms["newserver"]["description"];
+      var rol = document.forms["newserver"]["role"];
+      var pool = document.forms["newserver"]["poolName"];
+      var type = document.forms["newserver"]["typeName"];
+      var location = document.forms["newserver"]["locName"];
+      var serverid = getQueryVariable("si");
+      var users = [];
+      $("#userslist > span").each(function(){
+	users.push($(this).text());
+      });   
+      
+      var procs = [];
+      $(".proclistswe").each(function(){
+	procs.push($(this).attr("data-value"));
+      });
+      
+      //ips
+      var ips = [];
+      var i = 0;
+      var error = false;
+      $("input[name=ip]")  // for all checkboxes
+	  .each(function() {  // first pass, create name mapping	      
+	      if (i==0)
+	      {
+		if ($(this).val()=="")
+		 error = true;
+	      }	   
+	      if ($(this).val()!="")
+	      {
+		ips.push($(this).val());
+		i++;
+	      }
+	  });
+      
+      var mascaras = [];
+      j = 0;
+      $("input[name=mascara]")  // for all checkboxes
+	  .each(function() {  // first pass, create name mapping
+	      if (j==0)
+	      {
+		if ($(this).val()=="")
+		 error = true;
+	      }	
+	      if ($(this).val()!="")
+	      {
+		mascaras.push($(this).val());
+		j++;
+	      }
+	  });
+      if (i!=j)
+        error = true;
+      
+      if(error || name.value=="" || des.value=="" || rol.value=="" || pool.value=="" || type.value=="" || location.value=="")
+      {
+	alert("All fields must be filled out");
+	return;
+      }
+      $(".loadingicon4").css("visibility","visible");
+      $("#addbutton").prop('disabled', true);
+      $("#cancelbutton").prop('disabled', true);
+      $.ajax({ url: '/technicalNM/include/ops.php',
+		  data: {consultid: "editserver", name: name.value, des: des.value, ip:ips, masc: mascaras
+		  , rol: rol.value, pool: pool.value, type: type.value, location: location.value, usersarray: users, serverid: serverid, procss: procs},
+		  type: 'post',
+		  success: function(output) {
+				console.log(output);
+		                var url = window.location.href.split('#')[0];
+				setTimeout(function(){document.location.href="server.php"},1000);
+			    }
+      });
+    }
+    function getQueryVariable(variable) {
+	var query = window.location.search.substring(1);
+	var vars = query.split("&");
+	for (var i=0;i<vars.length;i++) {
+	  var pair = vars[i].split("=");
+	  if (decodeURIComponent(pair[0]) == variable) {
+	    return decodeURIComponent(pair[1]);
+	  }
+	} 
+    }
+    function removeuser(usr,serverid)
+    {
+      $( "#sp"+usr ).remove();
+      $( "#usrdel"+usr ).remove();
+    }
+    function removeproc(proc)
+    {
+      $( "#spp"+proc ).remove();
+      $( "#procdel"+proc ).remove();
+    }
+    function adduser()
+    {
+      var usr = document.forms["newserver"]["usernameinput"];
+      var text = $("#userslist").html();
+      if($("#sp" + usr.value).length == 0) {
+	$("#userslist").html(text+"<span id='sp"+usr.value+"'>"+ usr.value+"<img style='cursor:pointer;'"
+		  +"onclick='removeuser(\""+usr.value+"\")' id='usrdel"+usr.value+"' src='img/closeimg.png'><br></span>");
+      }
+    }
+    function cancelserver()
+    {
+      setTimeout(function(){document.location.href="server.php"},1000);
+    }
+    function addnewip()
+    {
+      $("#othersip").append('<div style="margin-top:10px"><label style="margin-right:8px">Ip</label>'
+			  +'<input class="form-control" name="ip" id="ipinput" style="width:30%;display:inline;margin-right:20px" value="">'
+			  +'<label style="margin-right:10px">Mascara</label>'
+			  +'<input class="form-control" name="mascara" id="mascarainput" style="width:30%;display:inline" value=""></div>');
+    }
+    </script>
+
+</body>
+
+</html>

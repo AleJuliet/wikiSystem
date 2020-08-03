@@ -1,0 +1,4 @@
+function gotosearch()
+{
+  document.getElementById("searchm").submit();
+}

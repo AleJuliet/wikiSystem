@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Wiki</title>
+
+    <!-- Bootstrap Core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <style type="text/css">
+    .nav-tabs>li.active>a, .nav-tabs>li.active>a:focus, .nav-tabs>li.active>a:hover
+    {
+      border: 0 solid #ddd;
+    }
+    .nav-tabs>.active>a
+    {
+      border: 0 solid #ddd;
+    }
+    .nav-tabs>li.active>a, .nav-tabs>li.active>a:focus, .nav-tabs>li.active>a:hover {
+      border-bottom-color: #c22d1a;
+      border-bottom-width:1px;
+      color:black;
+    }
+    .nav-tabs>li>a {
+      border-bottom: 0 solid #ddd; 
+      color:#c22d1a;
+    }
+    .nav-tabs
+    {
+     border-bottom-width:0px; 
+/*     border-bottom-color:#fcdad5; */
+    }
+    #tablelist {
+	display:inline-block;
+	width:250px;
+	white-space: nowrap;
+	overflow:hidden !important;
+	text-overflow: ellipsis;
+    }
+    </style>
+
+</head>
+<body>
+
+    <?php 
+    // include("include/tables.php");
+    // createtables();
+    $page = "serv";
+    include('header.php');
+
+    $sid = "";
+    if(isset($_GET["sid"]))
+      $sid = $_GET["sid"];
+      
+    //Pools 
+    $db = opendb();   
+    $ret = $db->query('SELECT * FROM POOL');
+    
+    $pool = array();
+    while ($res = $ret->fetchArray(SQLITE3_ASSOC)) {
+      $pool[$res["poolid"]] = $res["poolname"];
+    }
+    
+    $ret = $db->query('SELECT * FROM TYPE');
+    
+    $type = array();
+    while ($res = $ret->fetchArray(SQLITE3_ASSOC)) {
+      $type[$res["typeid"]] = $res["typename"];
+    }
+    
+    $ret = $db->query('SELECT * FROM LOCATION');
+    
+    $location = array();
+    while ($res = $ret->fetchArray(SQLITE3_ASSOC)) {
+      $location[$res["locid"]] = $res["location"];
+    }
+      
+    $db = opendb();
+    $query = $db->prepare('SELECT * FROM SERVERS as s where s.serverid=:id');
+    $query->bindValue(':id', $sid, SQLITE3_TEXT);
+    
+    $resultx = $query->execute();
+    ?>
+    
+    <!-- Page Content -->
+    <div class="container">
+        <!-- Search Content -->
+	<?php include('searchbox.php'); ?>
+	
+	
+	<div style="margin-top:50px"></div>
+	
+	<div id="bodyelements" style="">
+	  <ul class="nav nav-tabs ">
+	      <li role="presentation"><a class="pointer"  style="font-size:12px;padding: 5px 8px;">All Servers</a></li>
+	      <li role="presentation"><a class="pointer" style="font-size:12px;padding: 5px 8px;">Pool</a></li>
+	      <li role="presentation"><a class="pointer" style="font-size:12px;padding: 5px 8px;">Location</a></li>
+	      <li role="presentation"><a class="pointer"  style="font-size:12px;padding: 5px 8px;">Type</a></li>
+	      <li role="presentation"><a class="pointer"  style="font-size:12px;padding: 5px 8px;">Networks</a></li>
+	  </ul>
+	  
+	  <div id="procedurepanel" style="vertical-align: top;margin-top:25px;margin-left:5px;margin-bottom: 0px;">
+	      <div class="panel panel-default" style="min-height:600px;box-shadow: 4px 4px 5px #b7b7b7;">
+	          <div style="margin:20px">
+	          <?php
+	          while ($resx = $resultx->fetchArray(SQLITE3_ASSOC)) {
+	          ?>
+		    <div>
+		    <h2><?=$resx["servername"]?></h2>
+		    </div>
+		    <div>
+		    <label>Description:</label><span style="margin-left:10px"><?=$resx["serverdes"]?></span>
+		    </div>
+		    <div>
+		    <label>Role:</label><span style="margin-left:10px"><?=$resx["role"]?></span>
+		    </div>
+		    <div>
+		    <label>Pool:</label><span style="margin-left:10px"><?=$pool[$resx["spoolid"]]?></span>
+		    </div>
+		    <div>
+		    <label>Type:</label><span style="margin-left:10px"><?=$type[$resx["stypeid"]]?></span>
+		    </div>
+		    <div>
+		    <label>Location:</label><span style="margin-left:10px"><?=$location[$resx["slocationid"]]?></span>
+		    </div>
+		    <div>
+		    <label>Date:</label><span style="margin-left:10px"><?=$resx["creationdates"]?></span>
+		    </div>
+		    <div>
+		    <label>Ip/Mascara:</label>
+		    <?php 
+		    $new = $db->prepare('SELECT * FROM IPSERVER WHERE serverid=:id');
+		    $new->bindValue(':id',$sid, SQLITE3_TEXT);
+		    if (!($result = $new->execute())) {
+			continue;
+		    } 
+		    $i=0;
+		    while ($res = $result->fetchArray(SQLITE3_ASSOC)) {
+		      if ($i>0)
+			echo ", ";
+		    ?>
+		      <?php echo $res["ipserver"]."/".$res["mascara"]?>
+		    <?php 
+		      $i++;
+		    }
+		    ?>
+		    </div>
+		    <div>
+		    <label>Users:</label>
+		    <?php 
+		    $new = $db->prepare('SELECT * FROM USERSERVER WHERE serverid=:id');
+		    $new->bindValue(':id',$sid, SQLITE3_TEXT);
+		    if (!($result = $new->execute())) {
+			continue;
+		    } 
+		    $i=0;
+		    while ($res = $result->fetchArray(SQLITE3_ASSOC)) {
+		      if ($i>0)
+			echo ", ";
+		    ?>
+		      <?php echo $res["serveruser"]?>
+		    <?php 
+		      $i++;
+		    }
+		    ?>
+		    </div>
+		    <div>
+		    <label>Procedures:</label>
+		    <?php 
+		    $new = $db->prepare('SELECT * FROM PROCSERVER as prs,PROCEDURES pr where serverid=:id and pr.procid=prs.procid');
+		    $new->bindValue(':id',$sid, SQLITE3_TEXT);
+		    if (!($result = $new->execute())) {
+			continue;
+		    } 
+		    $i=0;
+		    while ($res = $result->fetchArray(SQLITE3_ASSOC)) {
+		      if ($i==0)
+			echo "<br>";
+		    ?>
+		      <a href="proci.php?pi=<?=$res["procid"]?>"><?php echo $res["procname"]?></a><br>
+		    <?php 
+		      $i++;
+		    }
+		    ?>
+		    </div>
+	          <?php
+		  }
+		  $db->close();
+		  ?>
+	         <div>
+	      </div>
+	  </div>
+
+	  
+	  
+        </div><!-- body elements -->
+    
+    </div>
+    
+    <!-- jQuery -->
+    <script src="js/jquery.js"></script>
+    <!-- Bootstrap Core JavaScript -->
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/aux.js"></script>
+    
+    <script type="text/javascript">
+    $( document ).ready(function() {
+      $('.nav-tabs > li > a').click(function(event){
+	$(this).parent().addClass('active').siblings().removeClass('active');  
+	if($(this).text()=="Pool")
+	{
+	  var urlf = "server.php#p";
+	  setTimeout(function(){document.location.href=urlf},100); 
+	}
+	else if($(this).text()=="Location")
+	{
+	  var urlf = "server.php#l";
+	  setTimeout(function(){document.location.href=urlf},100); 
+	}
+	else if($(this).text()=="Type")
+	{
+	  var urlf = "server.php#t";
+	  setTimeout(function(){document.location.href=urlf},100); 
+	}
+	else if($(this).text()=="Networks")
+	{
+	  var urlf = "server.php#v";
+	  setTimeout(function(){document.location.href=urlf},100); 	
+	}
+	else
+	{
+	  var urlf = "server.php";
+	  setTimeout(function(){document.location.href=urlf},100); 
+	}
+      });
+    });  
+    </script>
+
+</body>
+
+</html>

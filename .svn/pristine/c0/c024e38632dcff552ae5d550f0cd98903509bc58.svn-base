@@ -1,0 +1,602 @@
+<?php 
+  chdir('../');
+  require_once 'include/session.php';
+  require_once 'include/consults.php';
+  
+  /*
+  * Insert user
+  */
+  if(isset($_POST['consultid']) && !empty($_POST['consultid']) && $_POST["consultid"]=="deleteuser") {
+    $username = $_POST['username'];
+    deleteuser($username);
+  }
+  
+  /*
+  * Create category
+  */
+  if(isset($_POST['consultid']) && !empty($_POST['consultid']) && $_POST["consultid"]=="addcategory") {
+    $catparent = $_POST['catid'];
+    $cat = $_POST['cat'];
+    
+    if($catparent=="")
+    {
+      $catparent=0;
+    }
+    $db = opendb(); 
+    //Table parents
+    $smt = $db->prepare("INSERT INTO CATEGORIES (catname,parentCat_id)
+	    VALUES (:catname,:parentCat_id)");
+    $smt->bindValue(':catname', $cat, SQLITE3_TEXT);
+    $smt->bindValue(':parentCat_id', $catparent, SQLITE3_TEXT);
+
+    $smt->execute();
+    if(!$smt){
+	echo $db->lastErrorMsg();
+    } else {
+	echo "Records created successfully\n";
+    }
+    $idcat = $db->lastInsertRowid();
+    
+    //Table clousure 
+    $smt = $db->prepare("INSERT INTO Category_Clousure (parentCategory_id,child_id,depth)
+	    VALUES (:parentCategory_id,:child_id,:depth)");
+    $smt->bindValue(':parentCategory_id', $idcat, SQLITE3_TEXT);
+    $smt->bindValue(':child_id', $idcat, SQLITE3_TEXT);
+    $smt->bindValue(':depth', 0, SQLITE3_TEXT);
+
+    $smt->execute();
+    if(!$smt){
+	echo $db->lastErrorMsg();
+    } else {
+	echo "Records created successfully\n";
+    }
+    
+    //Table clousure
+    $smt = $db->prepare("INSERT INTO Category_Clousure (parentCategory_id,child_id,depth)
+	    SELECT p.parentCategory_id, c.child_id, p.depth+c.depth+1
+		    FROM Category_Clousure as p, Category_Clousure as c
+		    WHERE p.child_id=:parentCategory_id and c.parentCategory_id=:child_id");
+    $smt->bindValue(':parentCategory_id', $catparent, SQLITE3_TEXT);
+    $smt->bindValue(':child_id', $idcat, SQLITE3_TEXT);
+    
+    $smt->execute();
+    if(!$smt){
+	echo $db->lastErrorMsg();
+    } else {
+	echo "Records created successfully\n";
+    }
+    $db->close();
+
+    return true;
+  }
+  
+  /*
+  * Delete category
+  */
+  if(isset($_POST['consultid']) && !empty($_POST['consultid']) && $_POST["consultid"]=="deletecat") {
+    $id = $_POST['catid'];
+    $db = opendb();
+    
+    $query = $db->prepare('SELECT * FROM Category_Clousure where parentCategory_id=:id');
+    $query->bindValue(':id', $id, SQLITE3_TEXT);
+    if (!($result = $query->execute())) {
+	continue;
+    } 	      
+    while ($cat = $result->fetchArray(SQLITE3_ASSOC)) {
+      $smt = $db->prepare("DELETE FROM CATEGORIES where catid=:id");
+      $smt->bindValue(':id', $cat["child_id"], SQLITE3_TEXT);
+
+      $smt->execute();
+      if(!$smt){
+	  echo $db->lastErrorMsg();
+      } else {
+    //        echo "Records created successfully\n";
+      }
+            
+      if($cat["child_id"]!=$id)
+      {
+        $smt = $db->prepare("delete from Category_Clousure where parentCategory_id=:id and child_id=:id;");
+	$smt->bindValue(':id', $cat["child_id"], SQLITE3_TEXT);
+	$smt->execute();
+	if(!$smt){
+	    echo $db->lastErrorMsg();
+	} else {
+      //        echo "Records created successfully\n";
+	}
+      }
+    }
+	
+    $smt = $db->prepare("delete from Category_Clousure where id in ( Select link.id from Category_Clousure p, 
+        Category_Clousure link, Category_Clousure c, Category_Clousure to_delete
+	where p.parentCategory_id = link.parentCategory_id      and c.child_id = link.child_id
+	and p.child_id  = to_delete.parentCategory_id and c.parentCategory_id= to_delete.child_id
+	and (to_delete.parentCategory_id=:id or to_delete.child_id=:id)
+	and to_delete.depth<2);");
+	
+
+    $smt->bindValue(':id', $id, SQLITE3_TEXT);
+
+    $smt->execute();
+    if(!$smt){
+	echo $db->lastErrorMsg();
+    } else {
+  //        echo "Records created successfully\n";
+    }
+    
+    //Delete all procedures in this category 
+    $smt = $db->prepare("DELETE FROM PROCEDURES where categoryid=:id");
+    $smt->bindValue(':id', $id, SQLITE3_TEXT);
+
+    $smt->execute();
+    if(!$smt){
+	echo $db->lastErrorMsg();
+    } else {
+  //        echo "Records created successfully\n";
+// 	return true;
+    }
+        
+    $db->close();
+    return true;
+  }
+  
+  /*
+  * Edit category
+  */
+  if(isset($_POST['consultid']) && !empty($_POST['consultid']) && $_POST["consultid"]=="editcategory") {
+    $name = $_POST['cat'];
+    $catid = $_POST['catid'];
+    $db = opendb(); 
+    //Table parents
+    $smt = $db->prepare("UPDATE CATEGORIES SET catname=:catname WHERE catid=:catid");
+    $smt->bindValue(':catname', $name, SQLITE3_TEXT);
+    $smt->bindValue(':catid', $catid, SQLITE3_TEXT);
+
+    $smt->execute();
+    
+    $db->close();
+
+    return true;
+  }
+  
+  /*
+  * Create procedure
+  */
+  if(isset($_POST['consultid']) && !empty($_POST['consultid']) && $_POST["consultid"]=="addprocedure") {
+    $proc = $_POST['name'];
+    $des0 = $_POST['des'];
+    $cat = $_POST['cat'];
+    $user = $_POST['user'];
+    $parsed = $_POST['pars'];
+    
+    //Encript data 
+    $userinfo = selectUser($user);
+    $acc_ll = $_POST['sm'];
+    if($acc_ll!="")
+    {
+      $sameps = checkPasswordCorrectness($password,$user["dbKeySalt"],$user["passwordSalt"],$user["cryptDBKey"],$user["cryptHashedSaltUsrPwd"]);
+      if(!$sameps)
+      {
+        return 0;
+      }
+    }
+    $acc_ll = $_SESSION['acc_ll'];    
+    
+    $des = encryptdescription($des0,$acc_ll,$userinfo);
+    
+    
+    $db = opendb();   
+    $smt = $db->prepare("INSERT INTO PROCEDURES (procname,procdescription,categoryid,usercreator, parsed)
+	    VALUES (:procname,:procdes,:proccat,:user, :parsed)");
+    $smt->bindValue(':procname', $proc, SQLITE3_TEXT);
+    $smt->bindValue(':procdes', bin2hex($des), SQLITE3_TEXT);
+    $smt->bindValue(':proccat', $cat, SQLITE3_TEXT);
+    $smt->bindValue(':user', $user, SQLITE3_TEXT);
+    $smt->bindValue(':parsed', $parsed, SQLITE3_TEXT);
+
+    $smt->execute();
+    if(!$smt){
+	echo $db->lastErrorMsg();
+    } else {
+         echo "Records created successfully\n";
+    }
+    $db->close();
+    return true;
+  }  
+  /*
+  * Delete procedure
+  */
+  if(isset($_POST['consultid']) && !empty($_POST['consultid']) && $_POST["consultid"]=="deleteproc") {
+    $id = $_POST['id'];
+    $db = opendb();
+   
+    $smt = $db->prepare("DELETE FROM PROCEDURES where procid=:id");
+    $smt->bindValue(':id', $id, SQLITE3_TEXT);
+
+    $smt->execute();
+    if(!$smt){
+	echo $db->lastErrorMsg();
+    } else {
+  //        echo "Records created successfully\n";
+// 	return true;
+    }
+    $db->close();
+    return true;
+  }
+  /*
+  * Update procedure
+  */
+  if(isset($_POST['consultid']) && !empty($_POST['consultid']) && $_POST["consultid"]=="uprocedure") {
+    $proc = $_POST['name'];
+    $des = $_POST['des'];
+    $cat = $_POST['cat'];
+    $user = $_POST['user'];
+    $parsed = $_POST['pars'];
+    $id = $_POST['id'];
+    
+    //Encript data 
+    $userinfo = selectUser($user);
+    $acc_ll = $_SESSION['acc_ll'];    
+    
+    $des = encryptdescription($des0,$acc_ll,$userinfo);
+    
+    $db = opendb();
+   
+    $smt = $db->prepare("UPDATE PROCEDURES SET procname=:procname,
+       procdescription=:procdes,categoryid=:proccat,usermod=:user,parsed=:parsed,moddatep=datetime() where procid=:id");
+    $smt->bindValue(':procname', $proc, SQLITE3_TEXT);
+    $smt->bindValue(':procdes', bin2hex($des), SQLITE3_TEXT);
+    $smt->bindValue(':proccat', $cat, SQLITE3_TEXT);
+    $smt->bindValue(':user', $user, SQLITE3_TEXT);
+    $smt->bindValue(':parsed', $parsed, SQLITE3_TEXT);
+    $smt->bindValue(':id', $id, SQLITE3_TEXT);
+
+    $smt->execute();
+    if(!$smt){
+	echo $db->lastErrorMsg();
+    } else {
+  //        echo "Records created successfully\n";
+// 	return true;
+    }
+    $db->close();
+    return true;
+  }
+  
+  /*
+  * Create pool
+  */
+  if(isset($_POST['consultid']) && !empty($_POST['consultid']) && $_POST["consultid"]=="addpool") {
+    $pool = $_POST['pool'];
+    $des = $_POST['des'];
+    
+    $db = opendb();   
+    $smt = $db->prepare("INSERT INTO POOL (poolname,pooldes)
+	    VALUES (:poolname,:pooldes)");
+    $smt->bindValue(':poolname', $pool, SQLITE3_TEXT);
+    $smt->bindValue(':pooldes', $des, SQLITE3_TEXT);
+
+    $smt->execute();
+    if(!$smt){
+	echo $db->lastErrorMsg();
+    } else {
+         echo "Records created successfully\n";
+    }
+    $db->close();
+    return true;
+  }
+  /*
+  * Delete pool
+  */
+  if(isset($_POST['consultid']) && !empty($_POST['consultid']) && $_POST["consultid"]=="deletepool") {
+    $id = $_POST['id'];
+    $db = opendb();
+   
+    $smt = $db->prepare("DELETE FROM POOL where poolid=:id");
+    $smt->bindValue(':id', $id, SQLITE3_TEXT);
+
+    $smt->execute();
+    if(!$smt){
+	echo $db->lastErrorMsg();
+    } else {
+  //        echo "Records created successfully\n";
+// 	return true;
+    }
+    $db->close();
+    return true;
+  }
+  if(isset($_POST['consultid']) && !empty($_POST['consultid']) && $_POST["consultid"]=="editpool") {
+    $namepool = $_POST['pool'];
+    $id = $_POST['idpool'];
+    $despool = $_POST['des'];
+    
+    $db = opendb();   
+    $smt = $db->prepare("UPDATE POOL SET poolname=:poolname, pooldes=:pooldes
+        where poolid=:poolid");
+    $smt->bindValue(':poolname', $namepool, SQLITE3_TEXT);
+    $smt->bindValue(':pooldes', $despool, SQLITE3_TEXT);
+    $smt->bindValue(':poolid', $id, SQLITE3_TEXT);
+
+    $smt->execute();
+    if(!$smt){
+	echo $db->lastErrorMsg();
+    } else {
+         echo "Records updated successfully\n";
+    }
+    $db->close();
+    return true;
+  }
+  
+  /*
+  * Create location
+  */
+  if(isset($_POST['consultid']) && !empty($_POST['consultid']) && $_POST["consultid"]=="addloc") {
+    $loc = $_POST['location'];
+    
+    $db = opendb();   
+    $smt = $db->prepare("INSERT INTO LOCATION (location)
+	    VALUES (:location)");
+    $smt->bindValue(':location', $loc, SQLITE3_TEXT);
+
+    $smt->execute();
+    if(!$smt){
+	echo $db->lastErrorMsg();
+    } else {
+         echo "Records created successfully\n";
+    }
+    $db->close();
+    return true;
+  }
+  /*
+  * Delete location
+  */
+  if(isset($_POST['consultid']) && !empty($_POST['consultid']) && $_POST["consultid"]=="deletelocation") {
+    $id = $_POST['id'];
+    $db = opendb();
+   
+    $smt = $db->prepare("DELETE FROM LOCATION where locid=:id");
+    $smt->bindValue(':id', $id, SQLITE3_TEXT);
+
+    $smt->execute();
+    if(!$smt){
+	echo $db->lastErrorMsg();
+    } else {
+  //        echo "Records created successfully\n";
+// 	return true;
+    }
+    $db->close();
+    return true;
+  }
+  if(isset($_POST['consultid']) && !empty($_POST['consultid']) && $_POST["consultid"]=="editloc") {
+    $loc = $_POST['location'];
+    $id = $_POST['locationid'];
+    
+    $db = opendb();   
+    $smt = $db->prepare("UPDATE LOCATION SET location=:location
+        where locid=:id");
+    $smt->bindValue(':location', $loc, SQLITE3_TEXT);
+    $smt->bindValue(':id', $id, SQLITE3_TEXT);
+
+    $smt->execute();
+    if(!$smt){
+	echo $db->lastErrorMsg();
+    } else {
+         echo "Records updated successfully\n";
+    }
+    $db->close();
+    return true;
+  }
+  
+  /*
+  * Create Type
+  */
+  if(isset($_POST['consultid']) && !empty($_POST['consultid']) && $_POST["consultid"]=="addtype") {
+    $type = $_POST['type'];
+    
+    $db = opendb();   
+    $smt = $db->prepare("INSERT INTO TYPE (typename)
+	    VALUES (:typename)");
+    $smt->bindValue(':typename', $type, SQLITE3_TEXT);
+
+    $smt->execute();
+    if(!$smt){
+	echo $db->lastErrorMsg();
+    } else {
+         echo "Records created successfully\n";
+    }
+    $db->close();
+    return true;
+  }
+  /*
+  * Delete type
+  */
+  if(isset($_POST['consultid']) && !empty($_POST['consultid']) && $_POST["consultid"]=="deletetype") {
+    $id = $_POST['id'];
+    $db = opendb();
+   
+    $smt = $db->prepare("DELETE FROM TYPE where typeid=:id");
+    $smt->bindValue(':id', $id, SQLITE3_TEXT);
+
+    $smt->execute();
+    if(!$smt){
+	echo $db->lastErrorMsg();
+    } else {
+  //        echo "Records created successfully\n";
+// 	return true;
+    }
+    $db->close();
+    return true;
+  }
+  /* 
+  * Edit type
+  */
+  if(isset($_POST['consultid']) && !empty($_POST['consultid']) && $_POST["consultid"]=="edittype") {
+    $type = $_POST['type'];
+    $id = $_POST['typeid'];
+    
+    $db = opendb();   
+    $smt = $db->prepare("UPDATE TYPE SET typename=:typename
+        where typeid=:id");
+    $smt->bindValue(':typename', $type, SQLITE3_TEXT);
+    $smt->bindValue(':id', $id, SQLITE3_TEXT);
+
+    $smt->execute();
+    if(!$smt){
+	echo $db->lastErrorMsg();
+    } else {
+         echo "Records updated successfully\n";
+    }
+    $db->close();
+    return true;
+  }
+  
+  /*
+  * Create Server
+  */
+  if(isset($_POST['consultid']) && !empty($_POST['consultid']) && $_POST["consultid"]=="addserver") {
+    $name = $_POST['name'];
+    $des = $_POST['des'];
+    $ip = $_POST['ip'];
+    $masc = $_POST['masc'];
+    $rol = $_POST['rol'];
+    $pool = $_POST['pool'];
+    $type = $_POST['type'];
+    $location = $_POST['location'];
+    $users = $_POST['userss'];
+    
+    $db = opendb();   
+    $smt = $db->prepare("INSERT INTO SERVERS (servername,spoolid,stypeid,slocationid,role,serverdes)
+	    VALUES (:servername,:spoolid,:stypeid,:slocationid,:role,:serverdes)");
+    $smt->bindValue(':servername', $name, SQLITE3_TEXT);
+    $smt->bindValue(':ip', $ip, SQLITE3_TEXT);
+    $smt->bindValue(':mascara', $masc, SQLITE3_TEXT);
+    $smt->bindValue(':spoolid', $pool, SQLITE3_TEXT);
+    $smt->bindValue(':stypeid', $type, SQLITE3_TEXT);
+    $smt->bindValue(':slocationid', $location, SQLITE3_TEXT);
+    $smt->bindValue(':role', $rol, SQLITE3_TEXT);
+    $smt->bindValue(':serverdes', $des, SQLITE3_TEXT);
+
+    $smt->execute();
+    if(!$smt){
+	echo $db->lastErrorMsg();
+	return;
+    } else {
+         echo "Records created successfully\n";
+    }
+    
+    $idser = $db->lastInsertRowid();
+    
+    //Insert ips
+    for ($i = 0; $i < count($ip); $i++) { 
+      $smt = $db->prepare("INSERT INTO IPSERVER (serverid,ipserver,mascara)
+	      VALUES (:serverid,:ipserver,:mascara)");
+      $smt->bindValue(':serverid', $idser, SQLITE3_TEXT);
+      $smt->bindValue(':ipserver', $ip[$i], SQLITE3_TEXT);
+      $smt->bindValue(':mascara', $masc[$i], SQLITE3_TEXT);
+      
+      $smt->execute();
+      if(!$smt){
+	  echo $db->lastErrorMsg();
+	  return;
+      } else {
+	  echo "Records created successfully\n";
+      }
+    }    
+    
+    for ($i = 0; $i < count($users); $i++) { 
+      $smt = $db->prepare("INSERT INTO USERSERVER (serverid,serveruser)
+	      VALUES (:serverid,:serveruser)");
+      $smt->bindValue(':serverid', $idser, SQLITE3_TEXT);
+      $smt->bindValue(':serveruser', $users[$i], SQLITE3_TEXT);
+
+      $smt->execute();
+      if(!$smt){
+	  echo $db->lastErrorMsg();
+      } else {
+	  echo "Records created successfully\n";
+      }
+    }
+    $db->close();
+    return true;
+  }
+  if(isset($_POST['consultid']) && !empty($_POST['consultid']) && $_POST["consultid"]=="editserver") {
+    $name = $_POST['name'];
+    $des = $_POST['des'];
+    $ip = $_POST['ip'];
+    $masc = $_POST['masc'];
+    $rol = $_POST['rol'];
+    $pool = $_POST['pool'];
+    $type = $_POST['type'];
+    $location = $_POST['location'];
+    $users = $_POST['usersarray'];
+    $serverid = $_POST['serverid'];
+    
+    $db = opendb();  
+    $smt = $db->prepare("UPDATE SERVERS SET servername=:servername,ip=:ip,mascara=:mascara,spoolid=:spoolid,stypeid=:stypeid,
+                            slocationid=:slocationid,role=:role,serverdes=:serverdes WHERE serverid=:serverid");
+    $smt->bindValue(':servername', $name, SQLITE3_TEXT);
+    $smt->bindValue(':ip', $ip, SQLITE3_TEXT);
+    $smt->bindValue(':mascara', $masc, SQLITE3_TEXT);
+    $smt->bindValue(':spoolid', $pool, SQLITE3_TEXT);
+    $smt->bindValue(':stypeid', $type, SQLITE3_TEXT);
+    $smt->bindValue(':slocationid', $location, SQLITE3_TEXT);
+    $smt->bindValue(':role', $rol, SQLITE3_TEXT);
+    $smt->bindValue(':serverdes', $des, SQLITE3_TEXT);
+    $smt->bindValue(':serverid', $serverid, SQLITE3_TEXT);
+
+    $smt->execute();
+    if(!$smt){
+	echo $db->lastErrorMsg();
+	return;
+    } else {
+         echo "Records created successfully\n";
+    }
+    
+    //Select users
+    $ret = $db->prepare('SELECT * FROM USERSERVER where serverid=:id');
+    $ret->bindValue(':id', $serverid, SQLITE3_TEXT);
+    if (!($results = $ret->execute())) {
+	continue;
+    } 
+    $i = 0;
+    $userssever = array();
+    while ($cat = $results->fetchArray(SQLITE3_ASSOC)) {
+      $userssever[$cat["serveruser"]] = $cat["serveruser"];
+    }
+    
+    for ($i = 0; $i < count($users); $i++) { 
+      $smt = $db->prepare("INSERT INTO USERSERVER (serverid,serveruser)
+	      VALUES (:serverid,:serveruser)");
+      $smt->bindValue(':serverid', $serverid, SQLITE3_TEXT);
+      $smt->bindValue(':serveruser', $users[$i], SQLITE3_TEXT);
+
+      $smt->execute();
+      if(!$smt){
+	  echo $db->lastErrorMsg();
+      } else {
+	  echo "Records created successfully\n";
+      }
+      
+      //If it is on the list
+     if (isset($userssever[$users[$i]]))
+        unset($userssever[$users[$i]]);
+    }
+    
+    if(count($userssever)>0)
+    {
+//       for ($i = 0; $i < count($userssever); $i++) 
+      foreach ($userssever as $key => $value) 
+      {
+	$smt = $db->prepare("DELETE FROM USERSERVER where serverid=:id and serveruser=:serveruser");
+	$smt->bindValue(':id', $serverid, SQLITE3_TEXT);
+	$smt->bindValue(':serveruser', $userssever[$key], SQLITE3_TEXT);
+
+	$smt->execute();
+	if(!$smt){
+	    echo $db->lastErrorMsg();
+	} else {
+	}
+      }
+    }
+    $db->close();
+    return true;
+  }
+?>

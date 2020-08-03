@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Wiki</title>
+
+    <!-- Bootstrap Core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <style type="text/css">
+    
+    </style>
+
+</head>
+<?php 
+  include("include/consults.php");
+  $page = "";
+  include('header.php');
+  
+  //User
+  if(isset($_POST['keyword']) && !empty($_POST['keyword'])) 
+    $keyword = $_POST["keyword"];
+  else 
+    $keyword = "";
+    
+  $db = opendb();
+  $query = $db->prepare('SELECT * FROM PROCEDURES as p where p.procname LIKE :key or p.procdescription LIKE :key');
+  $query->bindValue(':key', "%".$keyword."%", SQLITE3_TEXT);
+  
+  $resultp = $query->execute();
+  
+  $query = $db->prepare('SELECT * FROM CATEGORIES as c where c.catname LIKE :key');
+  $query->bindValue(':key', "%".$keyword."%", SQLITE3_TEXT);
+  
+  $resultc = $query->execute();
+  
+  $query = $db->prepare('SELECT * FROM SERVERS as s where s.servername LIKE :key or s.serverdes LIKE :key');
+  $query->bindValue(':key', "%".$keyword."%", SQLITE3_TEXT);
+  
+  $results = $query->execute();
+
+?>
+<body>
+   
+    <!-- Page Content -->
+    <div class="container">
+	
+	
+	<div style="margin-top:50px"></div>
+	
+	<div id="bodyelements" style="">
+	  
+	  <div id="procedurepanel" style="vertical-align: top;margin-top:25px;margin-left:5px">
+	      <div class="panel panel-default" style="min-height:600px;">
+		  <div class="panel-heading" style="height:50px">
+		    <label>Search Result: </label><?php echo "    ".$keyword?>
+		  </div>
+		  <table class="table ">
+		    <tbody>
+		      <tr>
+			<td style="padding-top:5px; "></td>
+		      </tr>		      
+		      <?php 
+		      if($keyword!="")
+		      {
+			echo '<tr style="padding-top:5px; "><td style="padding-top:5px;font-weight:600 ">Procedures:</td></tr>';
+			while ($procs = $resultp->fetchArray(SQLITE3_ASSOC)) {
+			?>
+			  <tr style="padding-top:5px; "><td style="padding-top:5px; ">
+			  <img src="img/bullet2.gif" height="6px" style="margin-right:5px">
+			  <a href="proci.php?pi=<?php echo $procs["procid"]?>"><?php echo $procs["procname"]?></a></td></tr>
+			<?php 
+			}
+			echo '<tr style="padding-top:5px; "><td style="padding-top:5px;font-weight:600 ">Categories:</td></tr>';
+			while ($cat = $resultc->fetchArray(SQLITE3_ASSOC)) {
+			?>
+			  <tr style="padding-top:5px; "><td style="padding-top:5px; ">
+			  <img src="img/bullet2.gif" height="6px" style="margin-right:5px">
+			  <a href="procs.php?s=c"><?php echo $cat["catname"]?></a></td></tr>
+		      <?php 
+			}
+			echo '<tr style="padding-top:5px; "><td style="padding-top:5px;font-weight:600 ">Servers:</td></tr>';
+			while ($cat = $results->fetchArray(SQLITE3_ASSOC)) {
+			?>
+			  <tr style="padding-top:5px; "><td style="padding-top:5px; ">
+			  <img src="img/bullet2.gif" height="6px" style="margin-right:5px">
+			  <a href="vserver.php?sid=<?php echo $cat["serverid"]?>"><?php echo $cat["servername"]?></a></td></tr>
+		      <?php 
+			}
+		      }
+		      ?>
+		    </tbody>
+		  </table>
+	      </div>
+	  </div>
+
+	  
+	  
+        </div><!-- body elements -->
+    
+    </div>
+    
+    <!-- jQuery -->
+    <script src="js/jquery.js"></script>
+    <!-- Bootstrap Core JavaScript -->
+    <script src="js/bootstrap.min.js"></script>
+    
+    <script type="text/javascript">
+    </script>
+
+</body>
+
+</html>

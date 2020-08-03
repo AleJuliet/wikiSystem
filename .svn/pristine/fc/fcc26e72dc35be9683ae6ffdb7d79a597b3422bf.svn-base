@@ -1,0 +1,1497 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Wiki</title>
+
+    <!-- Bootstrap Core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Custom CSS -->
+    <style type="text/css">
+    body {
+      padding-top: 70px; /* Required padding for .navbar-fixed-top. Remove if using .navbar-static-top. Change if height of navigation changes. */
+    }
+    .nav-tabs>li.active>a, .nav-tabs>li.active>a:focus, .nav-tabs>li.active>a:hover
+    {
+      border: 0 solid #ddd;
+    }
+    .nav-tabs>.active>a
+    {
+      border: 0 solid #ddd;
+    }
+    .nav-tabs>li.active>a, .nav-tabs>li.active>a:focus, .nav-tabs>li.active>a:hover {
+      border-bottom-color: #c22d1a;
+      border-bottom-width:1px;
+      color:black;
+    }
+    .nav-tabs>li>a {
+      border-bottom: 0 solid #ddd; 
+      color:#c22d1a;
+    }
+    .nav-tabs
+    {
+     border-bottom-width:0px; 
+/*     border-bottom-color:#fcdad5; */
+    }
+    .table>tbody>tr>td
+    {
+     border-top-width: 0;
+    }
+    .table>tbody>tr>td {
+     padding: 0px 5px 3px 10px;
+    }
+    .processname:hover 
+    {
+     text-decoration: underline;
+     cursor: pointer;
+    }
+    .panelss .listcat .panel-heading {
+      background-color: transparent;
+      padding: 3px 2px 8px;
+      border-bottom: 1px solid #bababa;
+    }
+    .panelss .listcat .panel-default {
+      border-color: transparent;
+    }
+    .panelss .listcat .panel-body {
+      padding: 0; 
+    }
+    .hoverrow:focus, .hoverrow:hover {
+      background-color: #d9edf7 !important;
+      cursor: pointer;
+    }
+    .selectform
+    {
+    border-radius: 5px;
+    padding: 2px;
+    }
+    .pointer 
+    {
+    cursor: pointer;
+    }
+    .left {    
+    position: absolute;
+    left: 0;
+    }
+    .right {    
+    position: absolute;
+    right: 0;
+    }
+    .popover{position:fixed;
+    left:12% !important;}
+    </style>
+
+</head>
+
+<body>
+
+    <?php 
+    // include("include/tables.php");
+    // createtables();
+    $page = "serv";
+    include('header.php');
+    
+    //Order by option
+    $orderbytc = "";
+    $orderid = "";
+    if(isset($_GET["ord"]))
+      $orderid = $_GET["ord"];
+    if ($orderid==1)
+    {
+      $orderbytc = " order by servername";
+    }
+    
+    //Pools 
+    $db = opendb();   
+    $ret = $db->query('SELECT * FROM POOL');
+    
+    $pool = array();
+    while ($res = $ret->fetchArray(SQLITE3_ASSOC)) {
+      $pool[$res["poolid"]] = $res["poolname"];
+    }
+    
+    $ret = $db->query('SELECT * FROM TYPE');
+    
+    $type = array();
+    while ($res = $ret->fetchArray(SQLITE3_ASSOC)) {
+      $type[$res["typeid"]] = $res["typename"];
+    }
+    
+    $ret = $db->query('SELECT * FROM LOCATION');
+    
+    $location = array();
+    while ($res = $ret->fetchArray(SQLITE3_ASSOC)) {
+      $location[$res["locid"]] = $res["location"];
+    }
+
+//     include("include/tables.php");
+//     createtables();
+    $section = "";
+    if(isset($_GET["s"]))
+      $section = $_GET["s"];
+    
+//     deletetable();
+
+    $samenw = array();
+    ?>
+    
+    <script type="text/javascript">
+      var hash = window.location.hash;
+    </script>
+    
+    <!-- Page Content -->
+    <div class="container">
+        <!-- Search Content -->
+	<?php include('searchbox.php'); ?>
+	
+	
+	<div style="margin-top:50px"></div>
+	
+	<div id="bodyelements" style="">
+	  <ul class="nav nav-tabs ">
+	      <li role="presentation"><a class="pointer" onclick="changepar('')" style="font-size:12px;padding: 5px 8px;">All Servers</a></li>
+	      <li role="presentation"><a class="pointer" onclick="changepar('p')" style="font-size:12px;padding: 5px 8px;">Pool</a></li>
+	      <li role="presentation"><a class="pointer" onclick="changepar('l')" style="font-size:12px;padding: 5px 8px;">Location</a></li>
+	      <li role="presentation"><a class="pointer" onclick="changepar('t')" style="font-size:12px;padding: 5px 8px;">Type</a></li>
+	      <li role="presentation"><a class="pointer" onclick="changepar('v')" style="font-size:12px;padding: 5px 8px;">Networks</a></li>
+	  </ul>
+	  
+	  <div id="procedurepanel" style="display:none;vertical-align: top;margin-top:25px;margin-left:5px">
+	      <div class="panel panel-default" style="min-height:600px;">
+		  <div class="panel-heading" style="padding: 0px 5px;text-align:right">
+		    <button type="button" onclick="addserverf()" id="newserb" class="btn btn-default navbar-btn"><img src="img/add.png" width="15px" style="margin-bottom:2px">
+			<label style="font-weight:400;margin-bottom: 1px;cursor:pointer " class="newproc">Add Server</label></button>
+		  </div>
+		  <table class="table table-striped" id="listservers">
+		    <thead>
+		      <tr>
+			<th><img src="img/server.png" height="15px"></th>
+			<th style="cursor:pointer" onclick="orderby(1)">Name</th>
+			<th style="cursor:pointer" onclick="orderby(0)">Date</th>
+			<th>Ip</th>
+			<th>Pool</th>
+			<th>Type</th>
+			<th>Location</th>
+			<th><img src="img/users.png" height="15px"> Users </th>
+			<th></th>
+		      </tr>
+		    </thead>
+		    <tbody>
+		      <tr style="background-color:white">
+			<td ></td>
+			<td  style=""></td>
+			<td style="padding-top:0px;font-size:12px;"></td>
+			<td style="padding-top:0px;font-size:12px;"></td>
+			<td style="padding-top:0px;font-size:12px;color:#400000"></td>
+			<td style="padding-top:0px;font-size:12px;color:#400000"></td>
+			<td style="padding-top:0px;font-size:12px;color:#400000"></td>
+		      </tr>
+		      <?php		 
+		      $ret = $db->query('SELECT * FROM SERVERS '.$orderbytc);
+		      
+		      $i = 0;
+		      while ($res = $ret->fetchArray(SQLITE3_ASSOC)) {
+			  $query = $db->prepare('SELECT COUNT(*) as total FROM USERSERVER where serverid=:id');
+			  $query->bindValue(':id', $res["serverid"], SQLITE3_TEXT);
+			  if (!($result = $query->execute())) {
+			      continue;
+			  } 
+			  $nm = $result->fetchArray();
+		      ?>
+			<tr class="hoverrow" data-id="<?php echo $res["serverid"]?>"
+			id="nsr<?php echo $res["serverid"]?>" data-toggle="popover" data-trigger="hover" data-content="<?php echo $res["serverdes"]?>"
+			 >
+			  <td style="   width: 20px;" onclick="gotoserverv(<?php echo $res["serverid"]?>,'')"><img src="img/bullet2.gif" height="6px"></td>
+			  
+			  <td ><?php echo $res["servername"]?></td>
+			  
+			  <td style="padding-top:0px;font-size:12px;" onclick="gotoserverv(<?php echo $res["serverid"]?>,'')"><?php echo $res["creationdates"]?></td>
+			  
+			  <td style="font-size:12px" onclick="gotoserverv(<?php echo $res["serverid"]?>,'')">
+			  <?php 
+			  $new = $db->prepare('SELECT * FROM IPSERVER WHERE serverid=:id');
+			  $new->bindValue(':id', $res["serverid"], SQLITE3_TEXT);
+			  if (!($resultx = $new->execute())) {
+			      continue;
+			  } 
+			  while ($resx = $resultx->fetchArray(SQLITE3_ASSOC)) {
+			  ?>
+			    <?php echo $resx["ipserver"]."/".$resx["mascara"]?><br>
+			  <?php 
+			  }
+			  ?>
+			  </td>
+			  
+			  <td style="padding-top:0px;font-size:12px;color:#400000" onclick="gotoserverv(<?php echo $res["serverid"]?>,'')"><?php echo $pool[$res["spoolid"]]?></td>
+			  <td style="padding-top:0px;font-size:12px;color:#400000" onclick="gotoserverv(<?php echo $res["serverid"]?>,'')"><?php echo $type[$res["stypeid"]]?></td>
+			  <td style="padding-top:0px;font-size:12px;color:#400000" onclick="gotoserverv(<?php echo $res["serverid"]?>,'')"><?php echo $location[$res["slocationid"]]?></td>
+			  <td style="padding-top:0px;font-size:12px;color:#400000" onclick="gotoserverv(<?php echo $res["serverid"]?>,'')"><?php echo $nm["total"]?></td>
+			  <td>
+			  <img style="cursor:pointer;margin-left:10px;visibility: hidden" width="17" onclick="editserver(<?php echo $res["serverid"]?>)" id="editserver<?php echo $res["serverid"]?>" src="img/edit2.png">
+			  <img style="cursor:pointer;visibility: hidden;margin-left:10px" width="17" onclick="deleteserver(<?php echo $res["serverid"]?>,'<?php echo $res["servername"]?>')" id="deleteserver<?php echo $res["serverid"]?>" src="img/delete2.png">	
+			  </td>
+			</tr>
+		      <?php
+// 		      $samenw
+// 		      array_push($samenw[], "apple");
+		      }
+		      ?>
+		      
+		    </tbody>
+		  </table>
+		  
+		  <div id="newserver" style="display:none;margin: 30px;">
+		    <form role="form" method="post" name="newserver" id="newserver">
+		      <div class="form-group" >		  
+			  <label>Name</label>
+			  <input class="form-control" name="name" id="nameinput" style="width:40%">
+			  <p class="help-block"></p>
+		      </div>    
+		      <div class="form-group" style="margin-top:20px;margin-bottom:20px" >		  
+			  <label style="margin-right:5px">Ip</label>
+			  <input class="form-control" name="ip" id="ipinput" style="width:30%;display:inline;margin-right:15px">
+			  <label style="margin-right:5px">Mascara</label>
+			  <input class="form-control" name="mascara" id="mascarainput" style="width:30%;display:inline">
+			  <img style='cursor:pointer;margin-left:10px;margin-bottom:5px'
+			    onclick='addnewip()' width="25px" id='newipadd' src='img/add.png'>
+			  <p class="help-block"></p>
+			  <div id="othersip">
+			  
+			  </div>
+		      </div>
+		      <div class="form-group">
+			  <label>Description</label>
+			  <textarea class="form-control" rows="8" name="description" id="description"></textarea>
+		      </div>		      
+		      <div class="form-group" >		  
+			  <label>Role</label>
+			  <input class="form-control" name="role" id="roleinput" style="width:40%">
+			  <p class="help-block"></p>
+		      </div>      
+		      <div class="form-group" >		  
+			  <label>Pool:</label>
+			  <select class="selectform" id="poolName" name="poolName">
+			  <?php		
+			  $db = opendb();   
+			  $ret = $db->query('SELECT * FROM POOL');
+			  
+			  $i = 0;
+			  while ($cat = $ret->fetchArray(SQLITE3_ASSOC)) {
+			  ?>
+			    <option value="<?php echo $cat["poolid"]?>"><?php echo $cat["poolname"]?></option>
+			  <?php
+			  }
+			  ?>
+			</select>
+		      </div>  
+		      <div class="form-group" >		  
+			  <label>Type:</label>
+			  <select class="selectform" id="typeName" name="typeName">
+			  <?php		    
+			  $ret = $db->query('SELECT * FROM TYPE');
+			  
+			  $i = 0;
+			  while ($cat = $ret->fetchArray(SQLITE3_ASSOC)) {
+			  ?>
+			    <option value="<?php echo $cat["typeid"]?>"><?php echo $cat["typename"]?></option>
+			  <?php
+			  }
+			  ?>
+			  </select>
+		      </div>  
+		      <div class="form-group" >		  
+			  <label>Location:</label>
+			  <select class="selectform" id="locName" name="locName">
+			  <?php		    
+			  $ret = $db->query('SELECT * FROM LOCATION');
+			  
+			  $i = 0;
+			  while ($cat = $ret->fetchArray(SQLITE3_ASSOC)) {
+			  ?>
+			    <option value="<?php echo $cat["locid"]?>"><?php echo $cat["location"]?></option>
+			  <?php
+			  }
+			  ?>
+			  </select>
+		      </div>  
+		      <div class="form-group" >		  
+			  <label>Users:</label></p>
+			  <span id="userslist">
+			  </span>
+			  <select class="selectform" id="usersname" name="usersname">
+			  <option value="d"></option>
+			    <?php		    
+			    $ret = $db->query('SELECT * FROM USERS');
+			    
+			    $i = 0;
+			    while ($cat = $ret->fetchArray(SQLITE3_ASSOC)) {
+			    ?>
+			      <option value="<?php echo $cat["username"]?>"><?php echo $cat["username"]?></option>
+			    <?php
+			    }
+			    ?>
+			  </select>
+			  <label>or</label>
+			  <input class="form-control" name="usernameinput" id="usernameinput" style="width:20%;display: inline;">
+			  <button type="reset" id="cancelbutton" class="btn btn-default" onclick="adduser()">Add</button>
+			  <p class="help-block"></p>
+		      </div>  
+		      
+		      <div class="form-group" >		  
+			  <label>Procedures:</label></p>
+			  <span id="proclist2">
+			  </span>
+			  <select class="selectform" id="procnames" name="procnames">
+			  <option value="d"></option>
+			    <?php		    
+			    $ret = $db->query('SELECT * FROM PROCEDURES order by procname');
+			    
+			    $i = 0;
+			    while ($cat = $ret->fetchArray(SQLITE3_ASSOC)) {
+			    ?>
+			      <option value="<?php echo $cat["procid"]?>"><?php echo $cat["procname"]?></option>
+			    <?php
+			    }
+			    ?>
+			  </select>
+			  <p class="help-block"></p>
+		      </div> 
+		      
+
+		      <img class="loadingicon4" src="img/loading.gif" style="visibility: hidden;    margin: 10px;" width="20">
+		    </form>
+		    
+		    <button type="button " id="addbutton" class="btn btn-success" onclick="addserver()">Add Server</button>
+                    <button type="reset" id="cancelbutton" class="btn btn-default" onclick="cancelserver()">Cancel</button>
+		  </div>
+		  
+	      </div>
+	  </div>
+	  
+	  <div id="categorypanel" class="panelss" style="display:none;vertical-align: top;margin-top:25px;margin-left:5px">
+	    <div class="panel panel-default " style="min-height:600px;">
+		  <div class="panel-heading" style="padding: 0px 5px;text-align:right">
+		    <button type="button" data-toggle="modal" data-target=".bs-newpool-modal" class="btn btn-default navbar-btn"><img src="img/add.png" width="15px" style="margin-bottom:2px">
+			<label style="font-weight:400;margin-bottom: 1px; " class="newproc">Add Pool</label></button>
+		  </div>
+		  <div class="panel-group listcat" role="tablist" aria-multiselectable="true" id="accordion" style="">
+		  <?php 
+		  $db = opendb();
+		  $ret = $db->query('SELECT * FROM POOL ');
+		  
+		  $i = 0;
+		  while ($cat = $ret->fetchArray(SQLITE3_ASSOC)) {
+		  ?>		  
+		    <div class="panel panel-default">
+		      <div class="panel-heading" style="position: relative;height: 30px;" id="poold<?php echo $cat["poolid"]?>" 
+		        data-toggle="popover" data-trigger="hover" data-content="<?php echo $cat["pooldes"]?>">			
+<!--			<div class="left">-->
+			  <h4 class="panel-title" style="    margin: 5px;">
+			    <a class="accordion-toggle" data-toggle="collapse"  href="#collapsep<?php echo $cat["poolid"]?>">
+			      <span style="font-weight: 600;"><?php echo $cat["poolname"]?></span>
+			    </a>
+			    <img style="cursor:pointer;margin-left:10px" width="17" onclick="editpoolfun(<?php echo $cat["poolid"]?>,'<?php echo $cat["poolname"]?>','<?php echo $cat["pooldes"]?>')" id="editpoolfun<?php echo $cat["poolid"]?>" src="img/edit2.png">
+			    <img style="cursor:pointer;" width="17" onclick="deletepool(<?php echo $cat["poolid"]?>,'<?php echo $cat["poolname"]?>')" id="deletepool<?php echo $cat["poolid"]?>" src="img/delete2.png">
+			      
+			  </h4>
+<!--			</div>
+			<div class="right">
+			  <img style="cursor:pointer;" onclick="deletepool(<?php echo $cat["poolid"]?>)" id="deletepool<?php echo $cat["poolid"]?>" src="img/closeimg.png"></td>	
+			</div>-->
+		      </div>
+		      <div id="collapsep<?php echo $cat["poolid"]?>" class="panel-collapse collapse in">
+			<div class="panel-body">
+			 <?php 
+			  $new = $db->prepare('SELECT * FROM SERVERS WHERE spoolid=:id');
+			  $new->bindValue(':id', $cat["poolid"], SQLITE3_TEXT);
+			  if (!($resultx = $new->execute())) {
+			      continue;
+			  } 
+			  $h = 0;
+			  while ($resx = $resultx->fetchArray(SQLITE3_ASSOC)) {
+			  if ($h==0)
+			  {
+			 ?>
+			  <table class="table table-striped">
+			  <thead>
+			    <tr>
+			      <th><img src="img/server.png" height="15px"></th>
+			      <th>Name</th>
+			      <th>Date</th>
+			      <th>Ip</th>
+			      <th>Pool</th>
+			      <th>Type</th>
+			      <th>Location</th>
+			      <th><img src="img/users.png" height="15px"> Users </th>
+			    </tr>
+			  </thead>
+			  <tbody>
+			    <tr style="background-color:white">
+			      <td ></td>
+			      <td  style=""></td>
+			      <td style="padding-top:0px;font-size:12px;"></td>
+			      <td style="padding-top:0px;font-size:12px;"></td>
+			      <td style="padding-top:0px;font-size:12px;color:#400000"></td>
+			      <td style="padding-top:0px;font-size:12px;color:#400000"></td>
+			    </tr>
+			    <?php
+			    }
+			    $h++;
+				$query = $db->prepare('SELECT COUNT(*) as total FROM USERSERVER where serverid=:id');
+				$query->bindValue(':id', $resx["serverid"], SQLITE3_TEXT);
+				if (!($result = $query->execute())) {
+				    continue;
+				} 
+				$nm = $result->fetchArray();
+			    ?>
+			      <tr class="hoverrow">
+				<td style="   width: 20px;"><img src="img/bullet2.gif" height="6px"></td>
+				<td  style="" onclick="gotoserverv(<?php echo $resx["serverid"]?>,'')"><?php echo $resx["servername"]?></td>
+				<td style="padding-top:0px;font-size:12px;" onclick="gotoserverv(<?php echo $resx["serverid"]?>,'')"><?php echo $resx["creationdates"]?></td>
+				<td style="font-size:12px" onclick="gotoserverv(<?php echo $resx["serverid"]?>,'')">
+				<?php 
+				$new2 = $db->prepare('SELECT * FROM IPSERVER WHERE serverid=:id');
+				$new2->bindValue(':id', $resx["serverid"], SQLITE3_TEXT);
+				if (!($resultx2 = $new2->execute())) {
+				    continue;
+				} 
+				while ($resx2 = $resultx2->fetchArray(SQLITE3_ASSOC)) {
+				?>
+				  <?php echo $resx2["ipserver"]."/".$resx2["mascara"]?><br>
+				<?php 
+				}
+				?>
+				</td>
+				<td style="padding-top:0px;font-size:12px;color:#400000" onclick="gotoserverv(<?php echo $resx["serverid"]?>,'')"><?php echo $pool[$resx["spoolid"]]?></td>
+				<td style="padding-top:0px;font-size:12px;color:#400000" onclick="gotoserverv(<?php echo $resx["serverid"]?>,'')"><?php echo $type[$resx["stypeid"]]?></td>
+				<td style="padding-top:0px;font-size:12px;color:#400000" onclick="gotoserverv(<?php echo $resx["serverid"]?>,'')"><?php echo $location[$resx["slocationid"]]?></td>
+				<td style="padding-top:0px;font-size:12px;color:#400000" onclick="gotoserverv(<?php echo $resx["serverid"]?>,'')"><?php echo $nm["total"]?></td>
+			      </tr>
+			    <?php
+			    }
+			    ?>			   
+			  </tbody>
+			</table>
+			</div>
+		      </div>
+		    </div>		  
+		  <?php 
+		 }
+		  ?>
+		  
+		</div>
+	      </div>
+	  </div>
+	  
+	  <div id="locationpanel" class="panelss" style="display:none;vertical-align: top;margin-top:25px;margin-left:5px">
+	    <div class="panel panel-default " style="min-height:600px;">
+		  <div class="panel-heading" style="padding: 0px 5px;text-align:right">
+		    <button type="button" data-toggle="modal" data-target=".bs-newlocation-modal" class="btn btn-default navbar-btn"><img src="img/add.png" width="15px" style="margin-bottom:2px">
+			<label style="font-weight:400;margin-bottom: 1px; " class="newproc">Add Location</label></button>
+		  </div>
+		  <div class="panel-group listcat" role="tablist" aria-multiselectable="true" id="accordion" style="">
+			<?php 
+			$db = opendb();
+			$ret = $db->query('SELECT * FROM LOCATION');
+			
+			$i = 0;
+			while ($res = $ret->fetchArray(SQLITE3_ASSOC)) {
+			?>
+			<div class="panel panel-default">
+			  <div class="panel-heading" style="position: relative;height: 30px;">			
+<!--			    <div class="left">-->
+			      <h4 class="panel-title" style="    margin: 5px;">
+				<a class="accordion-toggle" data-toggle="collapse"  href="#collapsel<?php echo $res["locid"]?>" style="font-size:14px">
+				  <span style="font-weight: 600;"><?php echo $res["location"]?></span>
+				</a>
+				<img style="cursor:pointer;margin-left:10px" width="17" onclick="editlocationfun(<?php echo $res["locid"]?>,'<?php echo $res["location"]?>')" id="edditcategory<?php echo $res["locid"]?>" src="img/edit2.png">
+			        <img style="cursor:pointer;" width="17" onclick="deletelocation(<?php echo $res["locid"]?>,'<?php echo $res["location"]?>')" id="deletelocation<?php echo $res["locid"]?>" src="img/delete2.png">	
+			      
+			      </h4>
+<!--			    </div>
+			    <div class="right">
+			      <img style="cursor:pointer;" onclick="deletelocation(<?php echo $res["locid"]?>)" id="deletelocation<?php echo $res["locid"]?>" src="img/closeimg.png"></td>	
+			    </div>-->
+			  </div>
+			  <div id="collapsel<?php echo $res["locid"]?>" class="panel-collapse collapse in">
+			    <div class="panel-body">
+				<?php 
+				  $new = $db->prepare('SELECT * FROM SERVERS WHERE slocationid=:id');
+				  $new->bindValue(':id', $res["locid"], SQLITE3_TEXT);
+				  if (!($resultx = $new->execute())) {
+				      continue;
+				  } 
+				  $h = 0;
+				  while ($resx = $resultx->fetchArray(SQLITE3_ASSOC)) {
+				  if ($h==0)
+				  {
+				?>
+				<table class="table table-striped">
+				  <thead>
+				    <tr>
+				      <th><img src="img/server.png" height="15px"></th>
+				      <th>Name</th>
+				      <th>Date</th>
+				      <th>Ip</th>
+				      <th>Pool</th>
+				      <th>Type</th>
+				      <th>Location</th>
+				      <th><img src="img/users.png" height="15px"> Users </th>
+				    </tr>
+				  </thead>
+				  <tbody>
+				    <tr style="background-color:white">
+				      <td ></td>
+				      <td  style=""></td>
+				      <td style="padding-top:0px;font-size:12px;"></td>
+				      <td style="padding-top:0px;font-size:12px;"></td>
+				      <td style="padding-top:0px;font-size:12px;color:#400000"></td>
+				      <td style="padding-top:0px;font-size:12px;color:#400000"></td>
+				    </tr>
+				    <?php		
+				    }
+				    $h++;
+					$query = $db->prepare('SELECT COUNT(*) as total FROM USERSERVER where serverid=:id');
+					$query->bindValue(':id', $resx["serverid"], SQLITE3_TEXT);
+					if (!($result = $query->execute())) {
+					    continue;
+					} 
+					$nm = $result->fetchArray();
+				    ?>
+				      <tr class="hoverrow">
+					<td style="   width: 20px;"><img src="img/bullet2.gif" height="6px"></td>
+					<td  style="" onclick="gotoserverv(<?php echo $resx["serverid"]?>,'')"><?php echo $resx["servername"]?></td>
+					<td style="padding-top:0px;font-size:12px;" onclick="gotoserverv(<?php echo $resx["serverid"]?>,'')"><?php echo $resx["creationdates"]?></td>
+					<td style="font-size:12px" onclick="gotoserverv(<?php echo $resx["serverid"]?>,'')">
+					<?php 
+					$new2 = $db->prepare('SELECT * FROM IPSERVER WHERE serverid=:id');
+					$new2->bindValue(':id', $resx["serverid"], SQLITE3_TEXT);
+					if (!($resultx2 = $new2->execute())) {
+					    continue;
+					} 
+					while ($resx2 = $resultx2->fetchArray(SQLITE3_ASSOC)) {
+					?>
+					  <?php echo $resx2["ipserver"]."/".$resx2["mascara"]?><br>
+					<?php 
+					}
+					?>
+					</td>
+					<td style="padding-top:0px;font-size:12px;color:#400000" onclick="gotoserverv(<?php echo $resx["serverid"]?>,'')"><?php echo $pool[$resx["spoolid"]]?></td>
+					<td style="padding-top:0px;font-size:12px;color:#400000" onclick="gotoserverv(<?php echo $resx["serverid"]?>,'')"><?php echo $type[$resx["stypeid"]]?></td>
+					<td style="padding-top:0px;font-size:12px;color:#400000" onclick="gotoserverv(<?php echo $resx["serverid"]?>,'')"><?php echo $location[$resx["slocationid"]]?></td>
+					<td style="padding-top:0px;font-size:12px;color:#400000" onclick="gotoserverv(<?php echo $resx["serverid"]?>,'')"><?php echo $nm["total"]?></td>
+				      </tr>
+				    <?php
+				    }
+				    ?>			   
+				  </tbody>
+				</table>
+			    </div>
+			  </div>
+			</div>
+			<?php 
+			}
+			?>
+		  </div>
+	      </div>
+	  </div>
+	  
+	  <div id="typepanel" class="panelss" style="display:none;vertical-align: top;margin-top:25px;margin-left:5px">
+	    <div class="panel panel-default " style="min-height:600px;">
+		  <div class="panel-heading" style="padding: 0px 5px;text-align:right">
+		    <button type="button" data-toggle="modal" data-target=".bs-newtype-modal" class="btn btn-default navbar-btn"><img src="img/add.png" width="15px" style="margin-bottom:2px">
+			<label style="font-weight:400;margin-bottom: 1px; " class="newproc">Add Type</label></button>
+		  </div>
+		  <div class="panel-group listcat" role="tablist" aria-multiselectable="true" id="accordion" >
+			<?php 
+			$db = opendb();
+			$ret = $db->query('SELECT * FROM TYPE');
+			
+			$i = 0;
+			while ($res = $ret->fetchArray(SQLITE3_ASSOC)) {
+			?>
+			<div class="panel panel-default">
+			  <div class="panel-heading" style="position: relative;height: 30px;">			
+<!--			    <div class="left">-->
+			      <h4 class="panel-title" style="    margin: 5px;">
+				<a class="accordion-toggle" data-toggle="collapse"  href="#collapset<?php echo $res["typeid"]?>" style="font-size:14px">
+				  <span style="font-weight: 600;"><?php echo $res["typename"]?></span>
+				</a>
+				<img style="cursor:pointer;margin-left:10px" width="17" onclick="edittypefunction(<?php echo $res["typeid"]?>,'<?php echo $res["typename"]?>')" id="edditcategory<?php echo $res["typeid"]?>" src="img/edit2.png">
+			        <img style="cursor:pointer;" onclick="deletetype(<?php echo $res["typeid"]?>,'<?php echo $res["typename"]?>')" width="12" id="deletetype<?php echo $res["typeid"]?>" src="img/delete2.png">	
+			      </h4>
+<!--			    </div>-->
+<!--			    <div class="right">-->
+			      
+<!--			    </div>-->
+			  </div>
+			  <div id="collapset<?php echo $res["typeid"]?>" class="panel-collapse collapse in">
+			    <div class="panel-body">
+			      <?php 
+				$new = $db->prepare('SELECT * FROM SERVERS WHERE stypeid=:id');
+				$new->bindValue(':id', $res["typeid"], SQLITE3_TEXT);
+				if (!($resultx = $new->execute())) {
+				    continue;
+				}  
+				$h = 0;
+				while ($resx = $resultx->fetchArray(SQLITE3_ASSOC)) {
+				if ($h==0)
+				{
+			      ?>
+			      <table class="table table-striped">
+				  <thead>
+				    <tr>
+				      <th><img src="img/server.png" height="15px"></th>
+				      <th>Name</th>
+				      <th>Date</th>
+				      <th>Ip</th>
+				      <th>Pool</th>
+				      <th>Type</th>
+				      <th>Location</th>
+				      <th><img src="img/users.png" height="15px"> Users </th>
+				    </tr>
+				  </thead>
+				  <tbody>
+				    <tr style="background-color:white">
+				      <td ></td>
+				      <td  style=""></td>
+				      <td style="padding-top:0px;font-size:12px;"></td>
+				      <td style="padding-top:0px;font-size:12px;"></td>
+				      <td style="padding-top:0px;font-size:12px;color:#400000"></td>
+				      <td style="padding-top:0px;font-size:12px;color:#400000"></td>
+				    </tr>
+				    <?php		 
+				    }
+				    $h++;
+					$query = $db->prepare('SELECT COUNT(*) as total FROM USERSERVER where serverid=:id');
+					$query->bindValue(':id', $resx["serverid"], SQLITE3_TEXT);
+					if (!($result = $query->execute())) {
+					    continue;
+					} 
+					$nm = $result->fetchArray();
+				    ?>
+				      <tr class="hoverrow">
+					<td style="   width: 20px;"><img src="img/bullet2.gif" height="6px"></td>
+					<td  style="" onclick="gotoserverv(<?php echo $resx["serverid"]?>,'')"><?php echo $resx["servername"]?></td>
+					<td style="padding-top:0px;font-size:12px;" onclick="gotoserverv(<?php echo $resx["serverid"]?>,'')"><?php echo $resx["creationdates"]?></td>
+					<td style="font-size:12px" onclick="gotoserverv(<?php echo $resx["serverid"]?>,'')">
+					<?php 
+					$new2 = $db->prepare('SELECT * FROM IPSERVER WHERE serverid=:id');
+					$new2->bindValue(':id', $resx["serverid"], SQLITE3_TEXT);
+					if (!($resultx2 = $new2->execute())) {
+					    continue;
+					} 
+					while ($resx2 = $resultx2->fetchArray(SQLITE3_ASSOC)) {
+					?>
+					  <?php echo $resx2["ipserver"]."/".$resx2["mascara"]?><br>
+					<?php 
+					}
+					?>
+					</td>
+					<td style="padding-top:0px;font-size:12px;color:#400000" onclick="gotoserverv(<?php echo $resx["serverid"]?>,'')"><?php echo $pool[$resx["spoolid"]]?></td>
+					<td style="padding-top:0px;font-size:12px;color:#400000" onclick="gotoserverv(<?php echo $resx["serverid"]?>,'')"><?php echo $type[$resx["stypeid"]]?></td>
+					<td style="padding-top:0px;font-size:12px;color:#400000" onclick="gotoserverv(<?php echo $resx["serverid"]?>,'')"><?php echo $location[$resx["slocationid"]]?></td>
+					<td style="padding-top:0px;font-size:12px;color:#400000" onclick="gotoserverv(<?php echo $resx["serverid"]?>,'')"><?php echo $nm["total"]?></td>
+				      </tr>
+				    <?php
+				    }
+				    ?>			   
+				  </tbody>
+				</table>
+			    </div>
+			  </div>
+			</div>
+			<?php 
+			}
+			?>
+		  </div>
+	      </div>
+	  </div>
+	  
+	  <div id="vpnpanel" class="panelss" style="display:none;vertical-align: top;margin-top:25px;margin-left:5px">
+	    <div class="panel panel-default " style="min-height:600px;">
+		  <div class="panel-heading" style="padding: 0px 5px;text-align:right;height:50px">
+		    <label style="font-weight:400;margin-bottom: 1px; " class="newproc"></label>
+		  </div>
+		  <div class="panel-group listcat" role="tablist" aria-multiselectable="true" id="accordion">
+			<?php 
+			$db = opendb();
+			$ret = $db->query('SELECT * FROM IPSERVER group by netAddress');
+			
+			$i = 0;
+			while ($res = $ret->fetchArray(SQLITE3_ASSOC)) {
+			$title = $res["netAddress"]."/".$res["mascara"];
+			?>
+			<div class="panel panel-default">
+			  <div class="panel-heading" style="position: relative;height: 30px;">			
+<!--			    <div class="left">-->
+			      <h4 class="panel-title" style="    margin: 5px;">
+				<a class="accordion-toggle" data-toggle="collapse"  href="#collapse<?=$i?>" style="font-size:14px">
+				  <span style="font-weight: 600;"><?php echo $title?></span>
+				</a>
+			     </h4>
+<!--			    </div>-->
+<!--			    <div class="right">-->
+			      
+<!--			    </div>-->
+			  </div>
+			  <div id="collapse<?=$i?>" class="panel-collapse collapse">
+			    <div class="panel-body">
+			      <?php 
+				$new = $db->prepare('SELECT * FROM SERVERS as s,IPSERVER as ips WHERE s.serverid=ips.serverid and ips.netAddress=:net');
+				$new->bindValue(':net', $res["netAddress"], SQLITE3_TEXT);
+				if (!($resultx = $new->execute())) {
+				    continue;
+				}  
+				$h = 0;
+				while ($resx = $resultx->fetchArray(SQLITE3_ASSOC)) {
+				if ($h==0)
+				{
+			      ?>
+			      <table class="table table-striped">
+				  <thead>
+				    <tr>
+				      <th><img src="img/server.png" height="15px"></th>
+				      <th>Name</th>
+				      <th>Date</th>
+				      <th>Ip</th>
+				      <th>Pool</th>
+				      <th>Type</th>
+				      <th>Location</th>
+				      <th><img src="img/users.png" height="15px"> Users </th>
+				    </tr>
+				  </thead>
+				  <tbody>
+				    <tr style="background-color:white">
+				      <td ></td>
+				      <td  style=""></td>
+				      <td style="padding-top:0px;font-size:12px;"></td>
+				      <td style="padding-top:0px;font-size:12px;"></td>
+				      <td style="padding-top:0px;font-size:12px;color:#400000"></td>
+				      <td style="padding-top:0px;font-size:12px;color:#400000"></td>
+				    </tr>
+				    <?php		 
+				    }
+				    $h++;
+					$query = $db->prepare('SELECT COUNT(*) as total FROM USERSERVER where serverid=:id');
+					$query->bindValue(':id', $resx["serverid"], SQLITE3_TEXT);
+					if (!($result = $query->execute())) {
+					    continue;
+					} 
+					$nm = $result->fetchArray();
+				    ?>
+				      <tr class="hoverrow">
+					<td style="   width: 20px;"><img src="img/bullet2.gif" height="6px"></td>
+					<td  style="" onclick="gotoserverv(<?php echo $resx["serverid"]?>,'')"><?php echo $resx["servername"]?></td>
+					<td style="padding-top:0px;font-size:12px;" onclick="gotoserverv(<?php echo $resx["serverid"]?>,'')"><?php echo $resx["creationdates"]?></td>
+					<td style="font-size:12px" onclick="gotoserverv(<?php echo $resx["serverid"]?>,'')">
+					<?php 
+					$new2 = $db->prepare('SELECT * FROM IPSERVER WHERE serverid=:id');
+					$new2->bindValue(':id', $resx["serverid"], SQLITE3_TEXT);
+					if (!($resultx2 = $new2->execute())) {
+					    continue;
+					} 
+					while ($resx2 = $resultx2->fetchArray(SQLITE3_ASSOC)) {
+					?>
+					  <?php echo $resx2["ipserver"]."/".$resx2["mascara"]?><br>
+					<?php 
+					}
+					?>
+					</td>
+					<td style="padding-top:0px;font-size:12px;color:#400000" onclick="gotoserverv(<?php echo $resx["serverid"]?>,'')"><?php echo $pool[$resx["spoolid"]]?></td>
+					<td style="padding-top:0px;font-size:12px;color:#400000" onclick="gotoserverv(<?php echo $resx["serverid"]?>,'')"><?php echo $type[$resx["stypeid"]]?></td>
+					<td style="padding-top:0px;font-size:12px;color:#400000" onclick="gotoserverv(<?php echo $resx["serverid"]?>,'')"><?php echo $location[$resx["slocationid"]]?></td>
+					<td style="padding-top:0px;font-size:12px;color:#400000" onclick="gotoserverv(<?php echo $resx["serverid"]?>,'')"><?php echo $nm["total"]?></td>
+				      </tr>
+				    <?php
+				    }
+				    ?>			   
+				  </tbody>
+				</table>
+			    </div>
+			  </div>
+			</div>
+			<?php 
+			$i++;
+			}
+			?>
+		  </div>
+	      </div>
+	  </div>
+	  
+        </div><!-- body elements -->
+    
+    </div>
+
+     <!-- Creates modal for new pool -->
+      <div class="modal fade bs-newpool-modal" data-keyboard="false"  role="dialog" aria-labelledby="poolmodal" aria-hidden="true">
+	<div class="modal-dialog modal-lg">
+	  <div class="modal-content">
+	    <div class="modal-header">
+	      <a type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></a>
+	      <h4 class="modal-title" id="myModalLabel">New Pool</h4>
+	    </div>
+	    <div class="modal-body">
+	      <form role="form" method="post" name="newpool" id="newpool">
+	      <input type="hidden" name="section" value="<?php echo $section?>">
+		<div class="form-group">
+		    <label>Name</label>
+		    <input class="form-control" name="namepool" id="namepool">
+		</div>
+		<div class="form-group">
+		    <label>Description</label>
+		    <textarea class="form-control" rows="8" name="despool" id="despool"></textarea>
+		</div>
+	      <input type="hidden" id="vl" name="vl" value="">
+	      <div style="text-align:right"><img class="loadingicon" src="img/loading.gif" style="visibility: hidden" width="20"></div>
+	     </div>
+	     </form>
+	    <div class="modal-footer">
+	      <button type="button" class="btn btn-primary" onclick='return addpool();'>Ok</button>
+	      <a type="button" class="btn btn-default" data-dismiss="modal">Cancel</a>
+	    </div>
+	  </div>
+	</div>
+      </div>
+      
+      <div class="modal fade bs-editpool-modal" data-keyboard="false"  role="dialog" aria-labelledby="poolmodal" aria-hidden="true">
+	<div class="modal-dialog modal-lg">
+	  <div class="modal-content">
+	    <div class="modal-header">
+	      <a type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></a>
+	      <h4 class="modal-title" id="myModalLabel">Edit Pool</h4>
+	    </div>
+	    <div class="modal-body">
+	      <form role="form" method="post" name="editpool" id="editpool">
+	      <input type="hidden" name="section" value="<?php echo $section?>">
+	      <input type="hidden" name="poolid" value="">
+		<div class="form-group">
+		    <label>Name</label>
+		    <input class="form-control" name="namepool" id="namepool">
+		</div>
+		<div class="form-group">
+		    <label>Description</label>
+		    <textarea class="form-control" rows="8" name="despool" id="despool"></textarea>
+		</div>
+	      <input type="hidden" id="vl" name="vl" value="">
+	      <div style="text-align:right"><img class="loadingicon" src="img/loading.gif" style="visibility: hidden" width="20"></div>
+	     </div>
+	     </form>
+	    <div class="modal-footer">
+	      <button type="button" class="btn btn-primary" onclick='return editpool0();'>Ok</button>
+	      <a type="button" class="btn btn-default" data-dismiss="modal">Cancel</a>
+	    </div>
+	  </div>
+	</div>
+      </div>
+      
+      <!-- Creates modal for new location -->
+      <div class="modal fade bs-newlocation-modal" data-keyboard="false" role="dialog" aria-labelledby="poolmodal" aria-hidden="true">
+	<div class="modal-dialog modal-sm">
+	  <div class="modal-content">
+	    <div class="modal-header">
+	      <a type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></a>
+	      <h4 class="modal-title" id="myModalLabel">New Location</h4>
+	    </div>
+	    <div class="modal-body">
+	      <form role="form" method="post" name="newlocation" id="newlocation">
+		<div class="form-group">
+		    <label>Name</label>
+		    <input class="form-control" name="namelocation" id="namelocation">
+		</div>
+	      <input type="hidden" id="vl" name="vl" value="">
+	      <div style="text-align:right"><img class="loadingicon2" src="img/loading.gif" style="visibility: hidden" width="20"></div>
+	     </div>
+	     </form>
+	    <div class="modal-footer">
+	      <button type="button" class="btn btn-primary" onclick='return addlocation();'>Ok</button>
+	      <a type="button" class="btn btn-default" data-dismiss="modal">Cancel</a>
+	    </div>
+	  </div>
+	</div>
+      </div>
+      
+      <div class="modal fade bs-editlocation-modal" data-keyboard="false" role="dialog" aria-labelledby="poolmodal" aria-hidden="true">
+	<div class="modal-dialog modal-sm">
+	  <div class="modal-content">
+	    <div class="modal-header">
+	      <a type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></a>
+	      <h4 class="modal-title" id="myModalLabel">Edit Location</h4>
+	    </div>
+	    <div class="modal-body">
+	      <form role="form" method="post" name="editlocation" id="newlocation">
+	      <input type="hidden" name="locationid" value="">
+		<div class="form-group">
+		    <label>Name</label>
+		    <input class="form-control" name="namelocation" id="namelocation">
+		</div>
+	      <input type="hidden" id="vl" name="vl" value="">
+	      <div style="text-align:right"><img class="loadingicon2" src="img/loading.gif" style="visibility: hidden" width="20"></div>
+	     </div>
+	     </form>
+	    <div class="modal-footer">
+	      <button type="button" class="btn btn-primary" onclick='return editlocation0();'>Ok</button>
+	      <a type="button" class="btn btn-default" data-dismiss="modal">Cancel</a>
+	    </div>
+	  </div>
+	</div>
+      </div>
+      
+      <!-- Creates modal for new type -->
+      <div class="modal fade bs-newtype-modal" data-keyboard="false" role="dialog" aria-labelledby="poolmodal" aria-hidden="true">
+	<div class="modal-dialog modal-sm">
+	  <div class="modal-content">
+	    <div class="modal-header">
+	      <a type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></a>
+	      <h4 class="modal-title" id="myModalLabel">New Type</h4>
+	    </div>
+	    <div class="modal-body">
+	      <form role="form" method="post" name="newtype" id="newtype">
+		<div class="form-group">
+		    <label>Name</label>
+		    <input class="form-control" name="nametype" id="nametype">
+		</div>
+	      <input type="hidden" id="vl" name="vl" value="">
+	      <div style="text-align:right"><img class="loadingicon3" src="img/loading.gif" style="visibility: hidden" width="20"></div>
+	     </div>
+	     </form>
+	    <div class="modal-footer">
+	      <button type="button" class="btn btn-primary" onclick='return addtype();'>Ok</button>
+	      <a type="button" class="btn btn-default" data-dismiss="modal">Cancel</a>
+	    </div>
+	  </div>
+	</div>
+      </div>
+      
+      <div class="modal fade bs-edittype-modal" data-keyboard="false" role="dialog" aria-labelledby="poolmodal" aria-hidden="true">
+	<div class="modal-dialog modal-sm">
+	  <div class="modal-content">
+	    <div class="modal-header">
+	      <a type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></a>
+	      <h4 class="modal-title" id="myModalLabel">Edit Type</h4>
+	    </div>
+	    <div class="modal-body">
+	      <form role="form" method="post" name="edittype" id="edittype">
+	      <input type="hidden" name="typeid" value="">
+		<div class="form-group">
+		    <label>Name</label>
+		    <input class="form-control" name="nametype" id="nametype">
+		</div>
+	      <input type="hidden" id="vl" name="vl" value="">
+	      <div style="text-align:right"><img class="loadingicon3" src="img/loading.gif" style="visibility: hidden" width="20"></div>
+	     </div>
+	     </form>
+	    <div class="modal-footer">
+	      <button type="button" class="btn btn-primary" onclick='return edittype0();'>Ok</button>
+	      <a type="button" class="btn btn-default" data-dismiss="modal">Cancel</a>
+	    </div>
+	  </div>
+	</div>
+      </div>
+      
+    <!-- jQuery -->
+    <script src="js/jquery.js"></script>
+    <!-- Bootstrap Core JavaScript -->
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/aux.js"></script>
+    
+    <script type="text/javascript">
+    $( document ).ready(function() {
+//       $('.nav a:contains("All Servers")').parent().addClass('active');
+      $('.nav-tabs > li > a').click(function(event){
+	$(this).parent().addClass('active').siblings().removeClass('active');  
+	if($(this).text()=="Pool")
+	{
+	  $("#procedurepanel").css("display","none");
+	  $("#categorypanel").css("display","block");
+	  $("#locationpanel").css("display","none");
+	  $("#typepanel").css("display","none");
+	  $("#vpnpanel").css("display","none");
+	}
+	else if($(this).text()=="Location")
+	{
+	  $("#procedurepanel").css("display","none");
+	  $("#categorypanel").css("display","none");
+	  $("#locationpanel").css("display","block");
+	  $("#typepanel").css("display","none");
+	  $("#vpnpanel").css("display","none");
+	}
+	else if($(this).text()=="Type")
+	{
+	  $("#procedurepanel").css("display","none");
+	  $("#categorypanel").css("display","none");
+	  $("#locationpanel").css("display","none");
+	  $("#typepanel").css("display","block");
+	  $("#vpnpanel").css("display","none");
+	}
+	else if($(this).text()=="Networks")
+	{
+	  $("#procedurepanel").css("display","none");
+	  $("#categorypanel").css("display","none");
+	  $("#locationpanel").css("display","none");
+	  $("#typepanel").css("display","none");
+	  $("#vpnpanel").css("display","block");	
+	}
+	else
+	{
+	  $("#categorypanel").css("display","none");
+	  $("#procedurepanel").css("display","block");
+	  $("#locationpanel").css("display","none");
+	  $("#typepanel").css("display","none");
+	  $("#vpnpanel").css("display","none");
+	}
+      });
+      $('#categorypanel .panel-collapse:not(".in")').collapse('show');
+      var section = window.location.hash;
+//       var section = document.forms["newpool"]["section"];
+      if (section=="#p")
+      {
+	$('.nav a:contains("Pool")').parent().addClass('active');
+	$("#categorypanel").css("display","block");
+      }
+      else if (section=="#l")
+      {
+	$('.nav a:contains("Location")').parent().addClass('active');
+	$("#locationpanel").css("display","block");
+      }
+      else if (section=="#t")
+      {
+	$('.nav a:contains("Type")').parent().addClass('active');
+	$("#typepanel").css("display","block");
+      }
+      else 
+      {
+	$('.nav a:contains("All Servers")').parent().addClass('active');
+	$("#procedurepanel").css("display","block");
+      }
+      //
+      var options = {
+      placement: "bottom"
+      };
+      $('tr[id^="nsr"]').popover(options);
+      $('div[id^="poold"]').popover(options);
+      
+      //Prevent enter modal
+      $('form input').keydown(function(event){
+	if(event.keyCode == 13) {
+	  event.preventDefault();
+	}
+      });
+      //Selected user
+      $("#usersname").on("change", function()
+      {
+	if ($('#usersname option:first-child').val()=="d")
+	  $("#usersname option:first-child").remove();	
+	var usr = this.value;
+	var text = $("#userslist").html();
+	if($("#sp" + usr).length == 0) {
+	  $("#userslist").html(text+"<span id='sp"+usr+"'>"+ usr+"<img style='cursor:pointer;'"
+		    +"onclick='removeuser(\""+usr+"\")' id='usrdel"+usr+"' src='img/closeimg.png'><br></span>");
+	}
+      });
+      $("#procnames").on("change", function()
+      {
+	if ($('#procnames option:first-child').val()=="d")
+	  $("#procnames option:first-child").remove();	
+	var proc = this.value;
+	var proc2 = $("#procnames option:selected").html();
+	var text = $("#proclist2").html();
+	if($("#spp" + proc).length == 0) {
+	  $("#proclist2").html(text+"<div data-value='"+proc+"' id='spp"+proc+"'><span class='proclistswe' data-value='"+proc+"'>"+ proc2+"</span><img style='cursor:pointer;'"
+		    +"onclick='removeproc(\""+proc+"\")' id='cprocdel"+proc+"' src='img/closeimg.png'><br></div>");
+	}
+      });
+      $(".hoverrow").hover(function () 
+        { 
+          var id = $(this).attr("data-id");
+          $("#editserver"+id).css("visibility","visible");
+          $("#deleteserver"+id).css("visibility","visible");
+        }, function(){
+	  var id = $(this).attr("data-id");
+	  if ($("#editserver"+id).attr("src")!="img/loading.gif")
+	  {
+	    $("#editserver"+id).css("visibility","hidden");
+	  }
+	  if ($("#deleteserver"+id).attr("src")!="img/loading.gif")
+	  {
+	    $("#deleteserver"+id).css("visibility","hidden");
+	  }
+	}
+      );
+    });
+    function addserverf()
+    {
+      $("#newserver").css("display","block");
+      $("#listservers").css("display","none");
+      
+      $("#newserb").css("visibility","hidden");
+    }
+    function cancelserver()
+    {
+      $("#newserver").css("display","none");
+      $("#listservers").css("display","table");
+      
+      $("#newserb").css("visibility","visible");
+    }
+    function adduser()
+    {
+      var usr = document.forms["newserver"]["usernameinput"];
+      var text = $("#userslist").html();
+      if($("#sp" + usr.value).length == 0) {
+	$("#userslist").html(text+"<span id='sp"+usr.value+"'>"+ usr.value+"<img style='cursor:pointer;'"
+		  +"onclick='removeuser(\""+usr.value+"\")' id='usrdel"+usr.value+"' src='img/closeimg.png'><br></span>");
+      }
+    }
+    function removeuser(usr)
+    {
+      $( "#sp"+usr ).remove();
+      $( "#usrdel"+usr ).remove();
+    }
+    function removeproc(proc)
+    {
+      $( "#spp"+proc ).remove();
+      $( "#procdel"+proc ).remove();
+    }
+    /*
+    * Add Pool
+    */
+    function addpool()
+    {
+      var name = document.forms["newpool"]["namepool"];
+      if(name.value=="")
+      {
+	alert("Name must be filled out");
+	return;
+      }
+      var despool = document.forms["newpool"]["despool"];
+      $(".loadingicon").css("visibility","visible");
+      $.ajax({ url: '/technicalNM/include/ops.php',
+		  data: {consultid: "addpool", pool: name.value, des: despool.value},
+		  type: 'post',
+		  success: function(output) {
+				console.log(output);
+		                var url = window.location.href.split('#')[0];
+				var urlf = url+"#p";
+				setTimeout(function(){location.reload();},1000);
+			    }
+      });
+    }
+    function deletepool(id,name)
+    {      
+      var r = confirm("Are you sure you want to delete pool: "+name+"?");
+      if (r == true) {
+	$("#deletepool"+id).attr("src", "img/loading.gif");
+	$("#deletepool"+id).attr("width", "20");
+	$.ajax({ url: '/technicalNM/include/ops.php',
+		    data: {consultid: "deletepool", id: id},
+		    type: 'post',
+		    success: function(output) {
+				  var url = window.location.href.split('#')[0];
+				  var urlf = url+"#p";
+				  setTimeout(function(){location.reload();},1000);
+			      }
+	});
+      } else {
+	  console.log("no");
+      }       
+    }
+    function editpoolfun(a, b,c) {
+	$(".bs-editpool-modal").modal("show");
+	document.forms.editpool.poolid.value = a;
+	document.forms.editpool.namepool.value = b;
+	document.forms.editpool.despool.value = c;
+    }
+    function editpool0()
+    {
+      var name = document.forms["editpool"]["namepool"];
+      var poolid = document.forms["editpool"]["poolid"];
+      var despool = document.forms["editpool"]["despool"];
+      if(name.value=="")
+      {
+	alert("Name must be filled out");
+	return;
+      }
+      $(".loadingicon").css("visibility","visible");
+      $.ajax({ url: '/technicalNM/include/ops.php',
+		  data: {consultid: "editpool", pool: name.value, des: despool.value, idpool:poolid.value},
+		  type: 'post',
+		  success: function(output) {
+				console.log(output);
+		                var url = window.location.href.split('#')[0];
+				var urlf = url+"#p";
+				setTimeout(function(){location.reload();},1000);
+			    }
+      });
+    }
+    /*
+    * Add location
+    */
+    function addlocation()
+    {
+      var name = document.forms["newlocation"]["namelocation"];
+      if(name.value=="")
+      {
+	alert("Name must be filled out");
+	return;
+      }
+      $(".loadingicon2").css("visibility","visible");
+      $.ajax({ url: '/technicalNM/include/ops.php',
+		  data: {consultid: "addloc", location: name.value},
+		  type: 'post',
+		  success: function(output) {
+				console.log(output);
+		                var url = window.location.href.split('#')[0];
+				var urlf = url+"#l";
+				setTimeout(function(){location.reload();},1000);
+			    }
+      });
+    }
+    function deletelocation(id,name)
+    {
+      var r = confirm("Are you sure you want to delete location: "+name+"?");
+      if (r == true) {
+	$("#deletetype"+id).attr("src", "img/loading.gif");
+	$("#deletetype"+id).attr("width", "20");
+	$.ajax({ url: '/technicalNM/include/ops.php',
+		    data: {consultid: "deletelocation", id: id},
+		    type: 'post',
+		    success: function(output) {
+				  var url = window.location.href.split('?')[0];
+				  var urlf = url+"#l";
+				  setTimeout(function(){location.reload();},1000);
+			      }
+	});
+      } else {
+	  console.log("no");
+      }      
+    }
+    function editlocationfun(a, b) {
+	$(".bs-editlocation-modal").modal("show");
+	document.forms.editlocation.locationid.value = a;
+	document.forms.editlocation.namelocation.value = b
+    }
+    function editlocation0()
+    {
+      var name = document.forms["editlocation"]["namelocation"];
+      var locationid = document.forms["editlocation"]["locationid"];
+      if(name.value=="")
+      {
+	alert("Name must be filled out");
+	return;
+      }
+      $(".loadingicon2").css("visibility","visible");
+      $.ajax({ url: '/technicalNM/include/ops.php',
+		  data: {consultid: "editloc", location: name.value, locationid: locationid.value},
+		  type: 'post',
+		  success: function(output) {
+				console.log(output);
+		                var url = window.location.href.split('#')[0];
+				var urlf = url+"#l";
+				setTimeout(function(){location.reload();},1000);
+			    }
+      });
+    }
+    /*
+    * Add Type
+    */
+    function addtype()
+    {
+      var name = document.forms["newtype"]["nametype"];
+      if(name.value=="")
+      {
+	alert("Name must be filled out");
+	return;
+      }
+      $(".loadingicon3").css("visibility","visible");
+      $.ajax({ url: '/technicalNM/include/ops.php',
+		  data: {consultid: "addtype", type: name.value},
+		  type: 'post',
+		  success: function(output) {
+				console.log(output);
+		                var url = window.location.href.split('#')[0];
+				var urlf = url+"#t";
+				setTimeout(function(){location.reload();},1000);
+			    }
+      });
+    }
+    function deletetype(id,name)
+    {
+      var r = confirm("Are you sure you want to delete type: "+name+"?");
+      if (r == true) {
+	$("#deletetype"+id).attr("src", "img/loading.gif");
+	$("#deletetype"+id).attr("width", "20");
+	$.ajax({ url: '/technicalNM/include/ops.php',
+		    data: {consultid: "deletetype", id: id},
+		    type: 'post',
+		    success: function(output) {
+				  var url = window.location.href.split('#')[0];
+				  var urlf = url+"#t";
+				  setTimeout(function(){location.reload();},1000);
+			      }
+	});
+      } else {
+	  console.log("no");
+      }        
+    }
+    function edittypefunction(a, b) {
+	$(".bs-edittype-modal").modal("show");
+	document.forms.edittype.typeid.value = a;
+	document.forms.edittype.nametype.value = b
+    }
+    function edittype0(a, b) {
+      var name = document.forms["edittype"]["nametype"];
+      var typeid = document.forms["edittype"]["typeid"];
+      if(name.value=="")
+      {
+	alert("Name must be filled out");
+	return;
+      }
+      $(".loadingicon3").css("visibility","visible");
+      $.ajax({ url: '/technicalNM/include/ops.php',
+		  data: {consultid: "edittype", type: name.value, typeid: typeid.value},
+		  type: 'post',
+		  success: function(output) {
+				console.log(output);
+		                var url = window.location.href.split('#')[0];
+				var urlf = url+"#t";
+				setTimeout(function(){location.reload();},1000);
+			    }
+      });
+    }
+    function changepar(par)
+    {
+      window.location.hash = par;
+    }
+    function addserver()
+    {
+      var name = document.forms["newserver"]["name"];
+      var ip = document.forms["newserver"]["ip"];
+      var masc = document.forms["newserver"]["mascara"];
+      var des = document.forms["newserver"]["description"];
+      var rol = document.forms["newserver"]["role"];
+      var pool = document.forms["newserver"]["poolName"];
+      var type = document.forms["newserver"]["typeName"];
+      var location = document.forms["newserver"]["locName"];
+      
+      var users = [];
+      $("#userslist > span").each(function(){
+	users.push($(this).text());
+      });
+      
+      var procs = [];
+      $(".proclistswe").each(function(){
+	procs.push($(this).attr("data-value"));
+      });
+      
+      //ips
+      var ips = [];
+      var i = 0;
+      var error = false;
+      $("input[name=ip]")  // for all checkboxes
+	  .each(function() {  // first pass, create name mapping	      
+	      if (i==0)
+	      {
+		if ($(this).val()=="")
+		 error = true;
+	      }	   
+	      if ($(this).val()!="")
+	      {
+		ips.push($(this).val());
+		i++;
+	      }
+	  });
+      
+      var mascaras = [];
+      j = 0;
+      $("input[name=mascara]")  // for all checkboxes
+	  .each(function() {  // first pass, create name mapping
+	      if (j==0)
+	      {
+		if ($(this).val()=="")
+		 error = true;
+	      }	
+	      if ($(this).val()!="")
+	      {
+		mascaras.push($(this).val());
+		j++;
+	      }
+	  });
+      if (i!=j)
+        error = true;
+      
+      if(error || name.value=="" || des.value=="" || rol.value=="" || pool.value=="" || type.value=="" || location.value=="")
+      {
+	alert("All fields must be filled out");
+	return;
+      }
+      $(".loadingicon4").css("visibility","visible");
+      $("#addbutton").prop('disabled', true);
+      $("#cancelbutton").prop('disabled', true);
+      $.ajax({ url: '/technicalNM/include/ops.php',
+		  data: {consultid: "addserver", name: name.value, des: des.value, ip:ips, masc: mascaras
+		  , rol: rol.value, pool: pool.value, type: type.value, location: location.value, userss: users, procss: procs},
+		  type: 'post',
+		  success: function(output) {
+				console.log(output);
+		                var url = window.location.href.split('#')[0];
+				setTimeout(function(){document.location.href=url},1000);
+			    }
+      });
+    }
+    function editserver(id)
+    {
+      if (!e) var e = window.event;
+	e.cancelBubble = true;
+      if (e.stopPropagation) 
+	e.stopPropagation();
+      $("#editserver"+id).attr("src", "img/loading.gif");
+      $("#editserver"+id).attr("width", "20");
+      var urlf = "eserver.php?si="+id;
+      setTimeout(function(){document.location.href=urlf},100); 
+    }
+    function addnewip()
+    {
+      $("#othersip").append('<div style="margin-top:10px"><label style="margin-right:8px">Ip</label>'
+			  +'<input class="form-control" name="ip" id="ipinput" style="width:30%;display:inline;margin-right:20px" value="">'
+			  +'<label style="margin-right:10px">Mascara</label>'
+			  +'<input class="form-control" name="mascara" id="mascarainput" style="width:30%;display:inline" value=""></div>');
+    }
+    function deleteserver(serverid,servername)
+    {
+      var r = confirm("Are you sure you want to delete server: "+servername+"?");
+      if (r == true) {
+	$("#deleteserver"+serverid).attr("src", "img/loading.gif");
+	$("#deleteserver"+serverid).attr("width", "20");
+	$.ajax({ url: '/technicalNM/include/ops.php',
+		    data: {consultid: "deleteserver", id: serverid},
+		    type: 'post',
+		    success: function(output) {
+				  setTimeout(function(){location.reload()},1000);
+			      }
+	});
+      } else {
+	  console.log("no");
+      }   
+    }
+    function gotoserverv(id,x)
+    {
+      var urlf = "vserver.php?sid="+id;
+      setTimeout(function(){document.location.href=urlf},100); 
+    }
+    function orderby(num)
+    {
+      var url = document.location.protocol +"//"+ document.location.hostname + document.location.pathname;
+      var urlf = url+"?ord="+num;
+      document.location.href=urlf;
+    }
+    </script>
+
+</body>
+
+</html>

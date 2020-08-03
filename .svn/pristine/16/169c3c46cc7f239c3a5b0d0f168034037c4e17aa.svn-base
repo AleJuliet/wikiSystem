@@ -1,0 +1,166 @@
+<?php
+class DB extends SQLite3
+{
+  const userstable = 'CREATE TABLE USERS
+	(username TEXT PRIMARY KEY NOT NULL,
+	fullname       TEXT    NOT NULL,
+	passwordSalt   TEXT    NOT NULL,
+	dbKeySalt      TEXT    NOT NULL,
+	cryptHashedSaltUsrPwd blob    NOT NULL,
+	type           CHAR(1),
+	cryptDBKey           TEXT    NOT NULL,
+	creationdate  datetime default current_timestamp);';
+  
+  const categories = 'CREATE TABLE CATEGORIES
+       (catid INTEGER PRIMARY KEY,
+       catname       TEXT    NOT NULL,
+       creationdatec  datetime default current_timestamp,
+       parentCat_id       INTEGER    NOT NULL);';
+  
+  const categoryclosure = 'CREATE TABLE Category_Clousure 
+    (id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, 
+    parentCategory_id INTEGER NOT NULL, 
+    child_id INTEGER NOT NULL, 
+    depth INTEGER NOT NULL, 
+    date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP;';
+  
+  const procedures = 'CREATE TABLE PROCEDURES
+      (procid INTEGER PRIMARY KEY,
+      procname       TEXT    NOT NULL,
+      procdescription       TEXT    NOT NULL,
+      usercreator       TEXT    NOT NULL,
+      usermod       TEXT,
+      categoryid   INTEGER,
+      parsed INTEGER,
+      moddatep  datetime,
+      creationdatep  datetime default current_timestamp);';
+      
+  const location = 'CREATE TABLE LOCATION
+       (locid INTEGER PRIMARY KEY,
+       location       TEXT    NOT NULL);';
+       
+  const pool = 'CREATE TABLE POOL
+       (poolid INTEGER PRIMARY KEY,
+       poolname       TEXT    NOT NULL,
+       pooldes       TEXT    NOT NULL);';
+       
+  const type = 'CREATE TABLE TYPE
+       (typeid INTEGER PRIMARY KEY,
+       typename      TEXT    NOT NULL);';
+  
+  const userserver = 'CREATE TABLE USERSERVER
+       (usid INTEGER NOT NULL,
+       serverid       TEXT    NOT NULL,
+       serveruser  TEXT    NOT NULL,
+       PRIMARY KEY (usid, serverid));';
+       
+  const servers = 'CREATE TABLE SERVERS
+      (serverid INTEGER PRIMARY KEY,
+      servername       TEXT    NOT NULL,
+      serverdes       TEXT,
+      role       TEXT    NOT NULL,
+      spoolid       INTEGER,
+      stypeid   INTEGER,
+      slocationid   INTEGER,
+      
+      creationdates  datetime default current_timestamp);';
+  
+  const ipserver = 'CREATE TABLE IPSERVER
+      (serverid       TEXT    NOT NULL,
+	ipserver  TEXT    NOT NULL,
+	mascara       TEXT    NOT NULL,
+	netAddress  TEXT    NOT NULL,
+	PRIMARY KEY (serverid, ipserver, mascara));';
+	
+  const procserver = 'CREATE TABLE PROCSERVER
+      (serverid       INTEGER    NOT NULL,
+	procid  INTEGER    NOT NULL,
+	PRIMARY KEY (serverid, procid));';
+  
+  function __construct()
+  {
+      $this->open('db/wikidb.db');
+      
+      if (!$this) {
+        throw new Exception('Database not found');
+      }
+  }
+  
+  public function last_insert_rowid()
+  {
+      //$result = sqlite_last_insert_rowid($this->_handle);
+      $result = $this->_handle->lastInsertRowID();
+
+      return $result;
+  }
+  
+  function createtables()
+  {
+    $ret = $this->exec(self::userstable);
+    if(!$ret){
+	return $this->lastErrorMsg();
+    } 
+    $ret = $this->exec(self::categories);
+    if(!$ret){
+	return $this->lastErrorMsg();
+    }
+    $ret = $this->exec(self::categoryclosure);
+    if(!$ret){
+	return $this->lastErrorMsg();
+    }
+    $ret = $this->exec(self::procedures);
+    if(!$ret){
+	return $this->lastErrorMsg();
+    }
+    $ret = $this->exec(self::location);
+    if(!$ret){
+	return $this->lastErrorMsg();
+    }
+    $ret = $this->exec(self::pool);
+    if(!$ret){
+	return $this->lastErrorMsg();
+    }
+    $ret = $this->exec(self::type);
+    if(!$ret){
+	return $this->lastErrorMsg();
+    }
+    $ret = $this->exec(self::userserver);
+    if(!$ret){
+	return $this->lastErrorMsg();
+    }
+    $ret = $this->exec(self::servers);
+    if(!$ret){
+	return $this->lastErrorMsg();
+    }
+    $ret = $this->exec(self::ipserver);
+    if(!$ret){
+	return $this->lastErrorMsg();
+    }
+    $ret = $this->exec(self::procserver);
+    if(!$ret){
+	return $this->lastErrorMsg();
+    }
+  }
+  
+  function deletetable($table)
+  {
+    $sql ="DROP TABLE ".$table;
+    $ret = $this->exec($sql);
+    if(!$ret){
+      return $db->lastErrorMsg();
+    } 
+  }
+  
+  function cleantable($table)
+  {
+    $sql ="DELETE FROM ".$table." WHERE 1";
+    $ret = $this->exec($sql);
+    if(!$ret){
+      return $db->lastErrorMsg();
+    } 
+  }
+}
+
+
+
+?>
