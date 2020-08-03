@@ -19,8 +19,8 @@ phpliteadmin login:
 password: admin
 ```
 
-![alt text](https://github.com/AleJuliet/wikiSystem/blob/master/readmefile/screen1.png?s=300)
+![alt text](https://github.com/AleJuliet/wikiSystem/blob/master/readme/screen1.png?s=300)
 
-![alt text](https://github.com/AleJuliet/wikiSystem/blob/master/readmefile/screen2.png?s=300)
+![alt text](https://github.com/AleJuliet/wikiSystem/blob/master/readme/screen2.png?s=300)
 
-![alt text](https://github.com/AleJuliet/wikiSystem/blob/master/readmefile/screen3.png?s=300)
+![alt text](https://github.com/AleJuliet/wikiSystem/blob/master/readme/screen3.png?s=300)
